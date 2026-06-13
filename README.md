@@ -32,9 +32,14 @@ installs to the home screen and plays offline after the first load.
 
 ## Quality
 
-`.github/workflows/ci.yml` runs lint → build → smoke test on every push and PR.
-The smoke test (`scripts/smoke.mjs`) loads the built bundle in jsdom, drives the
-save-load, and fails if the scene doesn't render or anything throws.
+`.github/workflows/ci.yml` runs lint → build → test on every push and PR.
+`npm test` runs two checks:
+
+- **`scripts/check-data.mjs`** — imports the content layer and verifies the
+  catalog, building layouts, loot tables, world map, and default save all
+  reference real items/rooms/buildings.
+- **`scripts/smoke.mjs`** — loads the built bundle in jsdom, drives the
+  save-load, and fails if the scene doesn't render or anything throws.
 
 Icons are generated from `public/favicon.svg` via `scripts/gen-icons.mjs`
 (`npm i -D sharp` first).

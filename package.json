@@ -9,7 +9,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "lint": "eslint .",
-    "test": "node scripts/smoke.mjs"
+    "test": "node scripts/check-data.mjs && node scripts/smoke.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",
