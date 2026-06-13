@@ -8,7 +8,7 @@ import { Backpack, ChevronLeft, FlipHorizontal2, Paintbrush, Pencil, Plus, Setti
 import { BUILDABLE_IDS, BUILDINGS, MAP_SPOTS, bRooms, bSecrets, defaultState, freshBuilding, randomChar } from './data/buildings.js';
 import { EVENTS } from './data/events.js';
 import { ACC, BAND, CATS, CHAR_BAND, EYES, FLOORS, HAIRC, HAIRSTYLES, ITEMS, LOOT_KEYS, OUTFITC, OUTFITS, SKINS, WALLS, floorS, wallS } from './data/items.js';
-import { setSoundOn, sfx } from './lib/sound.js';
+import { setSoundOn, sfx, resumeAudio } from './lib/sound.js';
 import { storage } from './lib/storage.js';
 import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
 
@@ -120,11 +120,11 @@ function Game() {
     }, 700);
   }, [st]);
 
-  useEffect(() => { setSoundOn(!st || st.sound !== false); }, [st && st.sound]);
+  const soundOn = !st || st.sound !== false;
+  useEffect(() => { setSoundOn(soundOn); }, [soundOn]);
   useEffect(() => {
-    const resume = () => { const ac = _audio(); if (ac && ac.state === 'suspended') ac.resume(); };
-    window.addEventListener('pointerdown', resume);
-    return () => window.removeEventListener('pointerdown', resume);
+    window.addEventListener('pointerdown', resumeAudio);
+    return () => window.removeEventListener('pointerdown', resumeAudio);
   }, []);
 
   // ---- helpers ----

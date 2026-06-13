@@ -98,7 +98,7 @@ function CharSVG({ c, size = 120, style, pose, mouth }) {
   const hc = c.hairColor, hcD = shade(c.hairColor, -16), hcL = shade(c.hairColor, 24);
   const brow = shade(c.hairColor, -34);
   const top = c.top, topD = shade(c.top, -16);
-  const bot = c.bottom, botD = shade(c.bottom, -18);
+  const bot = c.bottom;
   const eye = c.eyes || '#5B3A2E';
   const o = c.outfit || 'tee';
   const acc = c.acc || 'none';

@@ -12,6 +12,8 @@ browser — no backend.
 - **React 18** + **Vite 5** (production build, no in-browser Babel)
 - **Tailwind CSS 3** via PostCSS (JIT)
 - Hand-drawn **SVG** characters/furniture plus **WebP** sprite assets
+- Installable **PWA** with offline support (service worker precaches the app + sprites)
+- **ESLint** (flat config) + a headless render smoke test, run in **CI**
 
 ## Develop
 
@@ -20,15 +22,30 @@ npm install
 npm run dev      # start the dev server (HMR) at http://localhost:5173
 npm run build    # production build → dist/
 npm run preview  # serve the built dist/ locally
+npm run lint     # ESLint
+npm test         # headless render smoke test (run after build)
 ```
 
 The build emits a static `dist/` you can host anywhere (the Vite `base` is
-relative, so it works from a subpath or a domain root).
+relative, so it works from a subpath or a domain root). Because it's a PWA, it
+installs to the home screen and plays offline after the first load.
+
+## Quality
+
+`.github/workflows/ci.yml` runs lint → build → smoke test on every push and PR.
+The smoke test (`scripts/smoke.mjs`) loads the built bundle in jsdom, drives the
+save-load, and fails if the scene doesn't render or anything throws.
+
+Icons are generated from `public/favicon.svg` via `scripts/gen-icons.mjs`
+(`npm i -D sharp` first).
 
 ## Project layout
 
 ```
 index.html              # Vite entry; loads /src/main.jsx and the Fredoka font
+public/                  # favicon + PWA icons, copied to dist root as-is
+scripts/                 # smoke test + icon generator
+.github/workflows/ci.yml # lint + build + test
 src/
   main.jsx              # React root
   App.jsx               # error boundary + app shell

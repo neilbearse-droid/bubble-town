@@ -3,6 +3,9 @@ let _ac = null;
 const _audio = () => { if (typeof window === 'undefined') return null; if (!_ac) { try { _ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { _ac = null; } } return _ac; };
 let SOUND_ON = true;
 const setSoundOn = (v) => { SOUND_ON = v; };
+// Browsers start the AudioContext suspended until a user gesture; call this from
+// a real interaction (e.g. the first pointerdown) to unlock playback.
+const resumeAudio = () => { const ac = _audio(); if (ac && ac.state === 'suspended') { try { ac.resume(); } catch { /* ignore */ } } };
 const _tone = (freq, t0, dur, type, gain) => {
   const ac = _audio(); if (!ac) return;
   const o = ac.createOscillator(), g = ac.createGain();
@@ -26,4 +29,4 @@ const sfx = (name) => {
   else if (name === 'build') { [330, 392, 523, 659].forEach((f, i) => _tone(f, t + i * 0.12, 0.22, 'triangle', 0.13)); }
 };
 
-export { setSoundOn, sfx };
+export { setSoundOn, sfx, resumeAudio };
