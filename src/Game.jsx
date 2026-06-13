@@ -151,6 +151,12 @@ function Game() {
   };
   const MAXSURF = 116;
   const canRest = (key) => { const d = ITEMS[key]; return !!(d && d.zone === 'floor' && !d.surf && d.s <= MAXSURF); };
+  // Stacking hierarchy. Items render by depth (y), but a "ground" layer (rugs &
+  // mats) is pushed into a lower z-band so everything else — chairs, tables,
+  // characters — always sits on top of them. GROUND_Z stays small enough that
+  // ground items remain above the room background.
+  const GROUND_Z = 500;
+  const itemZ = (key, yref, on) => Math.round(yref * 10) + (on ? 2 : 0) - ((ITEMS[key] && ITEMS[key].layer) === 'ground' ? GROUND_Z : 0);
   const surfTopY = (surf, vpH) => { const d = ITEMS[surf.key]; const ph = d.s * (d.r || 1); return surf.y - (d.surf.top * ph) / vpH * 100; };
   const findSurface = (x, y, draggedId) => {
     if (!vpRef.current || !stRef.current) return null;
@@ -409,7 +415,7 @@ function Game() {
         }
       }
       if (d.kind === 'container' && d.moved) {
-        setSt((s) => { const c = clone(s); const fs = c.buildings[bid].floors[floorRef.current]; fs.cpos = { ...(fs.cpos || {}) }; fs.cpos[d.id] = { x: w.x, y: clamp(w.y, 78, 98) }; return c; });
+        setSt((s) => { const c = clone(s); const fs = c.buildings[bid].floors[floorRef.current]; fs.cpos = { ...(fs.cpos || {}) }; fs.cpos[d.id] = { x: w.x, y: clamp(w.y, BAND.floor[0], BAND.floor[1]) }; return c; });
       }
     };
     const up = (e) => {
@@ -793,7 +799,7 @@ function Game() {
                   style={{
                     position: 'absolute', left: `${it.x}%`, top: `${it.y}%`,
                     transform: `translate(-50%,-100%)${it.flip ? ' scaleX(-1)' : ''}`,
-                    zIndex: Math.round((it.by != null ? it.by : it.y) * 10) + (it.on ? 2 : 0), touchAction: 'none', cursor: 'grab',
+                    zIndex: itemZ(it.key, it.by != null ? it.by : it.y, it.on), touchAction: 'none', cursor: 'grab',
                     transition: isDrag ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)',
                     filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none',
                     animation: 'ttpop .22s ease',

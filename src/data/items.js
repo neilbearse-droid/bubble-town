@@ -9,8 +9,10 @@ const ACC = [{ id: 'none', n: 'None' }, { id: 'headphones', n: 'Phones' }, { id:
 const NAMES = ['Milo', 'Ruby', 'Kai', 'Luna', 'Pip', 'Sage', 'Coco', 'Remy', 'Ivy', 'Theo', 'Nori', 'Bea', 'Ozzy', 'Wren'];
 
 // zones: floor (gravity), wall (hangs), ceiling (floats up), any
-const BAND = { floor: [80, 98], wall: [22, 58], ceiling: [10, 26], any: [8, 98] };
-const CHAR_BAND = [84, 98];
+// zones: floor (gravity), wall (hangs), ceiling (floats up), any
+// floor spans the back wall (low %) to the front of the room (high %).
+const BAND = { floor: [62, 98], wall: [22, 58], ceiling: [10, 26], any: [8, 98] };
+const CHAR_BAND = [66, 98];
 
 // svg furniture gets wired in below (chunk C); emoji props carry the rest
 const ITEMS = {
@@ -21,7 +23,7 @@ const ITEMS = {
   shelf: { n: 'Bookshelf', s: 140, r: 1.33, zone: 'floor', c: 'living', svg: 'Shelf', surf: { top: 0.96, half: 0.40 } },
   lamp: { n: 'Lamp', s: 86, r: 1.89, zone: 'floor', c: 'living', svg: 'Lamp' },
   plant: { n: 'Plant', s: 110, r: 1.25, zone: 'floor', c: 'living', svg: 'Plant' },
-  rug: { n: 'Rug', s: 190, r: 0.32, zone: 'floor', c: 'living', svg: 'Rug' },
+  rug: { n: 'Rug', s: 190, r: 0.32, zone: 'floor', c: 'living', svg: 'Rug', layer: 'ground' },
   frame: { e: '🖼️', s: 64, zone: 'wall', c: 'living', svg: 'Frame', r: 0.86 },
   clock: { e: '🕰️', s: 56, zone: 'wall', c: 'living', svg: 'Clock' },
   candle: { e: '🕯️', s: 40, zone: 'floor', c: 'living' },
@@ -75,7 +77,7 @@ const ITEMS = {
   orb: { e: '🔮', s: 70, r: 1.2, zone: 'floor', c: 'living', svg: 'Orb' },
   pod: { e: '🥚', s: 128, r: 1.08, zone: 'floor', c: 'living', svg: 'PodChair' },
   holo: { e: '✨', s: 56, r: 0.9, zone: 'wall', c: 'living', svg: 'Holo' },
-  ringrug: { e: '🌀', s: 190, r: 0.34, zone: 'floor', c: 'living', svg: 'RingRug' },
+  ringrug: { e: '🌀', s: 190, r: 0.34, zone: 'floor', c: 'living', svg: 'RingRug', layer: 'ground' },
   bunny: { e: '🐰', s: 74, zone: 'floor', c: 'pets' },
   bird: { e: '🦜', s: 54, zone: 'floor', c: 'pets' },
   hamster: { e: '🐹', s: 76, zone: 'floor', c: 'pets' },
