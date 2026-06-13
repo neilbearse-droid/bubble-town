@@ -1,6 +1,7 @@
 // Data-integrity check for the content layer. The data modules are plain JS, so
 // we can import them directly (no build) and assert the catalog, building
 // layouts, loot tables, world map, and default save all reference real things.
+import { readdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -59,7 +60,14 @@ for (const [eid] of Object.entries(EVENTS)) {
   if (!evItems.length) fail(`event "${eid}" has no items tagged ev:"${eid}"`);
 }
 
-// 6. The default save is internally consistent.
+// 6. Every item sprite is actually used — a sprite file with no matching ITEMS
+//    key would never render in-game (the orphan-sprite bug).
+for (const f of readdirSync(resolve(root, 'src/assets/items'))) {
+  const key = f.replace(/\.webp$/, '');
+  if (!ITEMS[key]) fail(`sprite "${f}" has no matching item key "${key}"`);
+}
+
+// 7. The default save is internally consistent.
 const st = defaultState();
 for (const ch of st.chars) {
   if (ch.building && !BUILDINGS[ch.building]) fail(`default char "${ch.name}" placed in unknown building "${ch.building}"`);
