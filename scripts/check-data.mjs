@@ -61,10 +61,12 @@ for (const [eid] of Object.entries(EVENTS)) {
 }
 
 // 6. Every item sprite is actually used — a sprite file with no matching ITEMS
-//    key would never render in-game (the orphan-sprite bug).
+//    key (or interactive on-state sprite) would never render in-game.
+const spriteKeys = new Set(Object.keys(ITEMS));
+for (const d of Object.values(ITEMS)) if (d.interactive && d.interactive.onImg) spriteKeys.add(d.interactive.onImg);
 for (const f of readdirSync(resolve(root, 'src/assets/items'))) {
   const key = f.replace(/\.webp$/, '');
-  if (!ITEMS[key]) fail(`sprite "${f}" has no matching item key "${key}"`);
+  if (!spriteKeys.has(key)) fail(`sprite "${f}" has no matching item key "${key}"`);
 }
 
 // 7. The default save is internally consistent.

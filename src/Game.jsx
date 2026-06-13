@@ -203,6 +203,8 @@ function Game() {
   };
   const flipItem = (id) => upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === id); if (it) it.flip = !it.flip; });
   const cycleVar = (id) => upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === id); if (it) { const nv = VARIANTS[it.key] || 1; it.v = ((it.v || 0) + 1) % nv; } });
+  // Tap an interactive item (lamp, TV, arcade…) to toggle its on/off state.
+  const toggleLit = (id) => { let on = false; upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === id); if (it) { it.lit = !it.lit; on = it.lit; } }); sfx(on ? 'pip' : 'pop'); };
   const placeChar = (id, x, y) => {
     const ly = clamp(y, CHAR_BAND[0], CHAR_BAND[1]);
     upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current; ch.x = x; ch.y = ly; } });
@@ -365,7 +367,12 @@ function Game() {
       setGhost({ x: e.clientX, y: e.clientY });
       const w = worldFromEvent(e);
       setDw({ x: w.x, y: w.y, key: d.key || null, id: d.id || null });
-      const foodKey = ((d.kind === 'new-item' || d.kind === 'item') && ITEMS[d.key] && ITEMS[d.key].food) ? d.key : null;
+      // A surface under the pointer (table/shelf) wins over feeding, so food
+      // dropped on a table sets the table instead of feeding a nearby friend.
+      const restKey = ((d.kind === 'new-item' || d.kind === 'item') && d.key && canRest(d.key)) ? d.key : null;
+      const restSurf = (restKey && d.anyMove) ? findSurface(w.x, w.y, d.kind === 'item' ? d.id : null) : null;
+      if (restSurf && d.feedId) { d.feedId = null; setFeed(null); }
+      const foodKey = (!restSurf && (d.kind === 'new-item' || d.kind === 'item') && ITEMS[d.key] && ITEMS[d.key].food) ? d.key : null;
       if (foodKey && d.anyMove && !d.fed) {
         const r = vpRef.current.getBoundingClientRect();
         const sceneW = r.width * nRooms();
@@ -388,11 +395,9 @@ function Game() {
           }
         } else if (d.feedId) { d.feedId = null; setFeed(null); }
       }
-      const restKey = ((d.kind === 'new-item' || d.kind === 'item') && d.key && canRest(d.key)) ? d.key : null;
       if (restKey && d.anyMove && !d.feedId) {
-        const sf = findSurface(w.x, w.y, d.kind === 'item' ? d.id : null);
-        d.surf = sf;
-        setSurfHint(sf ? { x: sf.x, y: sf.y } : null);
+        d.surf = restSurf;
+        setSurfHint(restSurf ? { x: restSurf.x, y: restSurf.y } : null);
       } else if (d.surf) { d.surf = null; setSurfHint(null); }
       if ((d.kind === 'item' || d.kind === 'char') && d.moved) {
         if (d.kind === 'item') {
@@ -434,7 +439,11 @@ function Game() {
       }
       if (d.kind === 'item') {
         if (inT) { removeItem(d.id); return; }
-        if (!d.moved) { setSel((s) => (s && s.t === 'item' && s.id === d.id ? null : { t: 'item', id: d.id })); return; }
+        if (!d.moved) {
+          if (ITEMS[d.key] && ITEMS[d.key].interactive) { toggleLit(d.id); return; }
+          setSel((s) => (s && s.t === 'item' && s.id === d.id ? null : { t: 'item', id: d.id }));
+          return;
+        }
         if (d.surf) {
           const sf = d.surf;
           upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === d.id); if (it) { it.x = sf.x; it.y = sf.y; it.on = sf.id; it.ox = sf.x - sf.sx; it.by = sf.baseY; } });
@@ -557,6 +566,7 @@ function Game() {
         @keyframes ttbob{from{transform:translateY(0)}to{transform:translateY(-6px)}}
         @keyframes ttpop{from{scale:.5;opacity:0}to{scale:1;opacity:1}}
         @keyframes tttwinkle{0%,100%{opacity:.35;transform:translateY(0) scale(.9)}50%{opacity:1;transform:translateY(-6px) scale(1.15)}}
+        @keyframes ttglow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(.92)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
         @keyframes ttpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
         @keyframes ttwiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
         @keyframes ttfloat{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1}100%{opacity:0;transform:translate(-50%,-170%) scale(1.15)}}
@@ -793,6 +803,8 @@ function Game() {
               const isSel = sel && sel.t === 'item' && sel.id === it.id;
               const isDrag = drag && drag.kind === 'item' && drag.id === it.id;
               const Fc = def.svg ? FURN[def.svg] : null;
+              const lit = !!(it.lit && def.interactive);
+              const src = (lit && def.interactive.onImg && IMG[def.interactive.onImg]) ? IMG[def.interactive.onImg] : IMG[it.key];
               return (
                 <div key={it.id}
                   onPointerDown={(e) => startDrag(e, { kind: 'item', id: it.id, key: it.key })}
@@ -807,7 +819,10 @@ function Game() {
                   {def.zone === 'floor' && !['Rug', 'RingRug'].includes(def.svg) && !it.on && (
                     <div style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)', width: def.s * 0.72, height: def.s * 0.15, borderRadius: '50%', background: 'radial-gradient(rgba(60,40,30,.25),transparent 70%)' }} />
                   )}
-                  {IMG[it.key] ? <img src={IMG[it.key]} draggable="false" style={{ width: def.s, height: 'auto', display: 'block', pointerEvents: 'none' }} /> : Fc ? <Fc size={def.s} v={it.v || 0} /> : <span style={{ fontSize: def.s, lineHeight: 1, display: 'block', filter: 'drop-shadow(0 3px 2px rgba(0,0,0,.15))' }}>{def.e}</span>}
+                  {lit && def.interactive.glow && (
+                    <div className="absolute pointer-events-none" style={{ left: '50%', top: '42%', transform: 'translate(-50%,-50%)', width: def.s * 1.5, height: def.s * 1.5, borderRadius: '50%', background: `radial-gradient(circle, ${def.interactive.glow}cc, ${def.interactive.glow}00 70%)`, mixBlendMode: 'screen', animation: 'ttglow 2.2s ease-in-out infinite' }} />
+                  )}
+                  {src ? <img src={src} draggable="false" style={{ width: def.s, height: 'auto', display: 'block', pointerEvents: 'none' }} /> : Fc ? <Fc size={def.s} v={it.v || 0} /> : <span style={{ fontSize: def.s, lineHeight: 1, display: 'block', filter: 'drop-shadow(0 3px 2px rgba(0,0,0,.15))' }}>{def.e}</span>}
                 </div>
               );
             })}
