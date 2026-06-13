@@ -58,6 +58,7 @@ const Backpack = mkIcon('🎒');
 
 
 
+
 const KEY = 'tiny_town_save_v2';
 const OLDKEY = 'tiny_town_save_v1';
 const uid = () => Math.random().toString(36).slice(2, 9);
@@ -108,8 +109,8 @@ const OUTFITS = [{ id: 'tee', n: 'Tee' }, { id: 'hoodie', n: 'Hoodie' }, { id: '
 const NAMES = ['Milo', 'Ruby', 'Kai', 'Luna', 'Pip', 'Sage', 'Coco', 'Remy', 'Ivy', 'Theo', 'Nori', 'Bea', 'Ozzy', 'Wren'];
 
 // zones: floor (gravity), wall (hangs), ceiling (floats up), any
-const BAND = { floor: [84, 97], wall: [22, 60], ceiling: [10, 26], any: [8, 97] };
-const CHAR_BAND = [86, 97];
+const BAND = { floor: [80, 98], wall: [22, 58], ceiling: [10, 26], any: [8, 98] };
+const CHAR_BAND = [84, 98];
 
 // svg furniture gets wired in below (chunk C); emoji props carry the rest
 const ITEMS = {
@@ -120,12 +121,12 @@ const ITEMS = {
   lamp: { n: 'Lamp', s: 86, r: 1.89, zone: 'floor', c: 'living', svg: 'Lamp' },
   plant: { n: 'Plant', s: 110, r: 1.25, zone: 'floor', c: 'living', svg: 'Plant' },
   rug: { n: 'Rug', s: 190, r: 0.32, zone: 'floor', c: 'living', svg: 'Rug' },
-  frame: { e: '🖼️', s: 64, zone: 'wall', c: 'living' },
-  clock: { e: '🕰️', s: 56, zone: 'wall', c: 'living' },
+  frame: { e: '🖼️', s: 64, zone: 'wall', c: 'living', svg: 'Frame', r: 0.86 },
+  clock: { e: '🕰️', s: 56, zone: 'wall', c: 'living', svg: 'Clock' },
   candle: { e: '🕯️', s: 40, zone: 'floor', c: 'living' },
   bed: { n: 'Bed', s: 220, r: 0.62, zone: 'floor', c: 'bedbath', svg: 'Bed', surf: { top: 0.50, half: 0.42 } },
   mirror: { e: '🪞', s: 70, zone: 'wall', c: 'bedbath' },
-  teddy: { e: '🧸', s: 56, zone: 'floor', c: 'bedbath' },
+  teddy: { e: '🧸', s: 56, zone: 'floor', c: 'bedbath', svg: 'Teddy' },
   doll: { e: '🪆', s: 48, zone: 'floor', c: 'bedbath' },
   basket: { e: '🧺', s: 56, zone: 'floor', c: 'bedbath' },
   bath: { e: '🛁', s: 120, zone: 'floor', c: 'bedbath' },
@@ -157,16 +158,16 @@ const ITEMS = {
   game: { e: '🎮', s: 50, zone: 'floor', c: 'fun' },
   guitar: { e: '🎸', s: 84, zone: 'floor', c: 'fun' },
   piano: { e: '🎹', s: 110, zone: 'floor', c: 'fun' },
-  ball: { e: '🏀', s: 48, zone: 'floor', c: 'fun' },
+  ball: { e: '🏀', s: 48, zone: 'floor', c: 'fun', svg: 'Ball' },
   art: { e: '🎨', s: 52, zone: 'floor', c: 'fun' },
   skate: { e: '🛹', s: 62, zone: 'floor', c: 'fun' },
   dice: { e: '🎲', s: 40, zone: 'floor', c: 'fun' },
   robot: { e: '🤖', s: 56, zone: 'floor', c: 'fun' },
-  gift: { e: '🎁', s: 52, zone: 'floor', c: 'fun' },
-  balloon: { e: '🎈', s: 60, zone: 'ceiling', c: 'fun' },
+  gift: { e: '🎁', s: 52, zone: 'floor', c: 'fun', svg: 'Gift' },
+  balloon: { e: '🎈', s: 60, zone: 'ceiling', c: 'fun', svg: 'Balloon', r: 1.5 },
   kite: { e: '🪁', s: 64, zone: 'ceiling', c: 'fun' },
-  cat: { e: '🐱', s: 60, zone: 'floor', c: 'pets' },
-  dog: { e: '🐶', s: 60, zone: 'floor', c: 'pets' },
+  cat: { e: '🐱', s: 60, zone: 'floor', c: 'pets', svg: 'Cat' },
+  dog: { e: '🐶', s: 60, zone: 'floor', c: 'pets', svg: 'Dog' },
   bunny: { e: '🐰', s: 56, zone: 'floor', c: 'pets' },
   bird: { e: '🦜', s: 54, zone: 'floor', c: 'pets' },
   hamster: { e: '🐹', s: 46, zone: 'floor', c: 'pets' },
@@ -615,19 +616,22 @@ function CharSVG({ c, size = 120, style, pose, mouth }) {
 }
 
 // ---------- illustrated furniture ----------
-const SofaSVG = ({ size }) => (
-  <svg width={size} height={size * 0.59} viewBox="0 0 220 130">
-    <rect x="8" y="30" width="204" height="68" rx="20" fill="#F2745F" />
-    <rect x="24" y="50" width="84" height="44" rx="14" fill="#F88F77" />
-    <rect x="112" y="50" width="84" height="44" rx="14" fill="#F88F77" />
-    <rect x="0" y="56" width="34" height="58" rx="15" fill="#E8654F" />
-    <rect x="186" y="56" width="34" height="58" rx="15" fill="#E8654F" />
-    <rect x="8" y="96" width="204" height="22" rx="11" fill="#E8654F" />
-    <rect x="34" y="54" width="30" height="30" rx="10" fill="#9AD9C2" transform="rotate(-8 49 69)" />
-    <rect x="26" y="116" width="12" height="12" rx="4" fill="#9A6A3F" />
-    <rect x="182" y="116" width="12" height="12" rx="4" fill="#9A6A3F" />
-  </svg>
-);
+const SofaSVG = ({ size, v = 0 }) => {
+  const P = [{ b: '#F2745F', c: '#F88F77', a: '#E8654F', t: '#9AD9C2' }, { b: '#5B8DEF', c: '#7FA9F2', a: '#4D78D6', t: '#F9C74F' }, { b: '#7BC49A', c: '#9FD7B8', a: '#5BAE82', t: '#FF8FAB' }][v] || { b: '#F2745F', c: '#F88F77', a: '#E8654F', t: '#9AD9C2' };
+  return (
+    <svg width={size} height={size * 0.59} viewBox="0 0 220 130">
+      <rect x="8" y="30" width="204" height="68" rx="20" fill={P.b} />
+      <rect x="24" y="50" width="84" height="44" rx="14" fill={P.c} />
+      <rect x="112" y="50" width="84" height="44" rx="14" fill={P.c} />
+      <rect x="0" y="56" width="34" height="58" rx="15" fill={P.a} />
+      <rect x="186" y="56" width="34" height="58" rx="15" fill={P.a} />
+      <rect x="8" y="96" width="204" height="22" rx="11" fill={P.a} />
+      <rect x="34" y="54" width="30" height="30" rx="10" fill={P.t} transform="rotate(-8 49 69)" />
+      <rect x="26" y="116" width="12" height="12" rx="4" fill="#9A6A3F" />
+      <rect x="182" y="116" width="12" height="12" rx="4" fill="#9A6A3F" />
+    </svg>
+  );
+};
 const ArmchairSVG = ({ size }) => (
   <svg width={size} height={size * 0.93} viewBox="0 0 140 130">
     <rect x="22" y="14" width="96" height="72" rx="22" fill="#4FA3A5" />
@@ -639,18 +643,23 @@ const ArmchairSVG = ({ size }) => (
     <rect x="99" y="110" width="11" height="12" rx="4" fill="#9A6A3F" />
   </svg>
 );
-const BedSVG = ({ size }) => (
-  <svg width={size} height={size * 0.62} viewBox="0 0 240 150">
-    <rect x="6" y="14" width="30" height="112" rx="11" fill="#B07D48" />
-    <rect x="6" y="102" width="228" height="28" rx="11" fill="#B07D48" />
-    <rect x="30" y="76" width="204" height="34" rx="13" fill="#FFFFFF" />
-    <rect x="86" y="66" width="148" height="48" rx="14" fill="#7FA9E6" />
-    <path d="M92 80 h134" stroke="#9DBFF0" strokeWidth="7" strokeLinecap="round" />
-    <rect x="36" y="60" width="52" height="28" rx="13" fill="#FFF6E6" />
-    <rect x="12" y="128" width="14" height="16" rx="5" fill="#8A5E33" />
-    <rect x="214" y="128" width="14" height="16" rx="5" fill="#8A5E33" />
-  </svg>
-);
+const BedSVG = ({ size, v = 0 }) => {
+  const P = [{ bl: '#7FA9E6', st: '#9DBFF0', pl: '#FFF6E6', fr: '#B07D48', ft: '#8A5E33' }, { bl: '#F7A8C4', st: '#FCC4D8', pl: '#FFFFFF', fr: '#E2A6BC', ft: '#C98AA6' }, { bl: '#86C9A2', st: '#A9DCC0', pl: '#FFF1C7', fr: '#9A6A3F', ft: '#7E5230' }][v] || { bl: '#7FA9E6', st: '#9DBFF0', pl: '#FFF6E6', fr: '#B07D48', ft: '#8A5E33' };
+  return (
+    <svg width={size} height={size * 0.62} viewBox="0 0 240 150">
+      <rect x="6" y="14" width="30" height="112" rx="11" fill={P.fr} />
+      <rect x="6" y="102" width="228" height="28" rx="11" fill={P.fr} />
+      <rect x="30" y="76" width="204" height="34" rx="13" fill="#FFFFFF" />
+      <rect x="86" y="66" width="148" height="48" rx="14" fill={P.bl} />
+      <path d="M92 80 h134" stroke={P.st} strokeWidth="7" strokeLinecap="round" />
+      <rect x="36" y="60" width="52" height="28" rx="13" fill={P.pl} />
+      {v === 1 && <path d="M62 70 q-6 -8 -12 0 q6 8 12 13 q6 -5 12 -13 q-6 -8 -12 0 z" fill="#F2748F" />}
+      {v === 2 && <path d="M150 82 l4 9 10 1 -7 7 2 10 -9 -5 -9 5 2 -10 -7 -7 10 -1 z" fill="#F9C74F" />}
+      <rect x="12" y="128" width="14" height="16" rx="5" fill={P.ft} />
+      <rect x="214" y="128" width="14" height="16" rx="5" fill={P.ft} />
+    </svg>
+  );
+};
 const TableSVG = ({ size }) => (
   <svg width={size} height={size * 0.7} viewBox="0 0 170 120">
     <rect x="5" y="32" width="160" height="17" rx="8.5" fill="#C58B5A" />
@@ -659,24 +668,32 @@ const TableSVG = ({ size }) => (
     <rect x="137" y="52" width="13" height="60" rx="5" fill="#B07D48" />
   </svg>
 );
-const ChairSVG = ({ size }) => (
-  <svg width={size} height={size * 1.44} viewBox="0 0 90 130">
-    <rect x="20" y="4" width="50" height="54" rx="11" fill="#C58B5A" />
-    <rect x="30" y="14" width="30" height="34" rx="8" fill="#D9A86C" />
-    <rect x="12" y="56" width="66" height="15" rx="7.5" fill="#B07D48" />
-    <rect x="17" y="69" width="11" height="56" rx="4.5" fill="#A86F47" />
-    <rect x="62" y="69" width="11" height="56" rx="4.5" fill="#A86F47" />
-  </svg>
-);
-const LampSVG = ({ size }) => (
-  <svg width={size} height={size * 1.89} viewBox="0 0 90 170">
-    <ellipse cx="45" cy="70" rx="42" ry="20" fill="#FFE08A" opacity=".35" />
-    <path d="M22 8 L68 8 L80 52 L10 52 Z" fill="#F9C74F" />
-    <path d="M10 52 L80 52" stroke="#E0A93C" strokeWidth="5" strokeLinecap="round" />
-    <rect x="42" y="52" width="6" height="88" fill="#6B6B6B" />
-    <ellipse cx="45" cy="148" rx="27" ry="10" fill="#5A5A5A" />
-  </svg>
-);
+const ChairSVG = ({ size, v = 0 }) => {
+  const P = [{ a: '#C58B5A', b: '#D9A86C', c: '#B07D48', d: '#A86F47' }, { a: '#6FB7B9', b: '#8FCED0', c: '#4FA3A5', d: '#418C8E' }, { a: '#F2945F', b: '#F9B68C', c: '#E07A45', d: '#C76838' }][v] || { a: '#C58B5A', b: '#D9A86C', c: '#B07D48', d: '#A86F47' };
+  return (
+    <svg width={size} height={size * 1.44} viewBox="0 0 90 130">
+      <rect x="20" y="4" width="50" height="54" rx="11" fill={P.a} />
+      <rect x="30" y="14" width="30" height="34" rx="8" fill={P.b} />
+      <rect x="12" y="56" width="66" height="15" rx="7.5" fill={P.c} />
+      <rect x="17" y="69" width="11" height="56" rx="4.5" fill={P.d} />
+      <rect x="62" y="69" width="11" height="56" rx="4.5" fill={P.d} />
+    </svg>
+  );
+};
+const LampSVG = ({ size, v = 0 }) => {
+  const sh = [{ c: '#F9C74F', e: '#E0A93C' }, { c: '#F7A8C4', e: '#E283A6' }, { c: '#8FC7E8', e: '#5FA3CF' }][v] || { c: '#F9C74F', e: '#E0A93C' };
+  return (
+    <svg width={size} height={size * 1.89} viewBox="0 0 90 170">
+      <ellipse cx="45" cy="70" rx="42" ry="20" fill="#FFE08A" opacity=".32" />
+      {v === 1
+        ? <path d="M14 50 Q45 4 76 50 Z" fill={sh.c} />
+        : <path d="M22 8 L68 8 L80 52 L10 52 Z" fill={sh.c} />}
+      <path d="M10 52 L80 52" stroke={sh.e} strokeWidth="5" strokeLinecap="round" />
+      <rect x="42" y="52" width="6" height="88" fill="#6B6B6B" />
+      <ellipse cx="45" cy="148" rx="27" ry="10" fill="#5A5A5A" />
+    </svg>
+  );
+};
 const PlantSVG = ({ size }) => (
   <svg width={size} height={size * 1.25} viewBox="0 0 120 150">
     <ellipse cx="60" cy="48" rx="12" ry="36" fill="#3E8E5A" />
@@ -719,14 +736,106 @@ const TVSVG = ({ size }) => (
     <rect x="52" y="112" width="76" height="11" rx="5.5" fill="#3A3F47" />
   </svg>
 );
-const RugSVG = ({ size }) => (
-  <svg width={size} height={size * 0.32} viewBox="0 0 200 64">
-    <ellipse cx="100" cy="33" rx="96" ry="27" fill="#E8A6B8" />
-    <ellipse cx="100" cy="33" rx="70" ry="19" fill="#F3C3D0" />
-    <ellipse cx="100" cy="33" rx="40" ry="11" fill="#FBDDE6" />
+const RugSVG = ({ size, v = 0 }) => {
+  const P = [['#E8A6B8', '#F3C3D0', '#FBDDE6'], ['#8FC7E8', '#B6DCF2', '#DDF0FB'], ['#9ED9B5', '#C0E8CF', '#E0F4E8']][v] || ['#E8A6B8', '#F3C3D0', '#FBDDE6'];
+  return (
+    <svg width={size} height={size * 0.32} viewBox="0 0 200 64">
+      <ellipse cx="100" cy="33" rx="96" ry="27" fill={P[0]} />
+      <ellipse cx="100" cy="33" rx="70" ry="19" fill={P[1]} />
+      <ellipse cx="100" cy="33" rx="40" ry="11" fill={P[2]} />
+    </svg>
+  );
+};
+const TeddySVG = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <circle cx="26" cy="24" r="13" fill="#B07D48" /><circle cx="74" cy="24" r="13" fill="#B07D48" />
+    <circle cx="26" cy="24" r="6" fill="#C99A66" /><circle cx="74" cy="24" r="6" fill="#C99A66" />
+    <circle cx="22" cy="64" r="10" fill="#B07D48" /><circle cx="78" cy="64" r="10" fill="#B07D48" />
+    <circle cx="36" cy="92" r="11" fill="#B07D48" /><circle cx="64" cy="92" r="11" fill="#B07D48" />
+    <ellipse cx="50" cy="74" rx="28" ry="23" fill="#C98F5A" />
+    <ellipse cx="50" cy="78" rx="16" ry="13" fill="#E8C49A" />
+    <circle cx="50" cy="42" r="25" fill="#C98F5A" />
+    <ellipse cx="50" cy="50" rx="8" ry="6" fill="#E8C49A" />
+    <circle cx="40" cy="38" r="4" fill="#3B2A1A" /><circle cx="60" cy="38" r="4" fill="#3B2A1A" />
+    <circle cx="50" cy="47" r="3.5" fill="#3B2A1A" />
+    <path d="M47 52 q3 3 6 0" stroke="#3B2A1A" strokeWidth="2" fill="none" strokeLinecap="round" />
   </svg>
 );
-const FURN = { Sofa: SofaSVG, Armchair: ArmchairSVG, Bed: BedSVG, Table: TableSVG, Chair: ChairSVG, Lamp: LampSVG, Plant: PlantSVG, Shelf: ShelfSVG, TV: TVSVG, Rug: RugSVG };
+const GiftSVG = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <rect x="14" y="42" width="72" height="50" rx="7" fill="#F2745F" />
+    <rect x="14" y="42" width="72" height="13" rx="6" fill="#E8654F" />
+    <rect x="44" y="42" width="12" height="50" fill="#FFD166" />
+    <rect x="14" y="47" width="72" height="8" fill="#FFD166" />
+    <path d="M50 42 C40 24 16 26 26 38 C33 46 47 42 50 42 Z" fill="#FFD166" />
+    <path d="M50 42 C60 24 84 26 74 38 C67 46 53 42 50 42 Z" fill="#FFD166" />
+    <circle cx="50" cy="40" r="6" fill="#F9B233" />
+  </svg>
+);
+const BalloonSVG = ({ size }) => (
+  <svg width={size} height={size * 1.5} viewBox="0 0 70 105">
+    <path d="M35 6 C12 6 8 36 22 54 C28 62 30 64 35 70 C40 64 42 62 48 54 C62 36 58 6 35 6 Z" fill="#F2745F" />
+    <ellipse cx="27" cy="26" rx="7" ry="10" fill="#F9A28E" opacity=".7" />
+    <path d="M30 70 L40 70 L35 77 Z" fill="#C24A38" />
+    <path d="M35 77 q-5 7 0 13 q5 6 0 12" stroke="#9A6A3F" strokeWidth="2" fill="none" strokeLinecap="round" />
+  </svg>
+);
+const BallSVG = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="44" fill="#FF6B6B" />
+    <path d="M50 6 C30 30 30 70 50 94 C70 70 70 30 50 6 Z" fill="#FFD166" />
+    <path d="M6 50 C30 35 70 35 94 50 C70 65 30 65 6 50 Z" fill="#FFFFFF" opacity=".9" />
+    <circle cx="50" cy="50" r="44" fill="none" stroke="#E2554F" strokeWidth="3" />
+    <ellipse cx="36" cy="33" rx="10" ry="7" fill="#FFFFFF" opacity=".5" />
+  </svg>
+);
+const FrameSVG = ({ size }) => (
+  <svg width={size} height={size * 0.86} viewBox="0 0 100 86">
+    <rect x="6" y="6" width="88" height="74" rx="7" fill="#B07D48" />
+    <rect x="13" y="13" width="74" height="60" rx="3" fill="#EAF6FF" />
+    <circle cx="68" cy="30" r="8" fill="#FFD166" />
+    <path d="M13 73 L40 44 L56 60 L70 50 L87 68 L87 73 Z" fill="#8FC7A0" />
+    <path d="M13 73 L33 53 L49 68 Z" fill="#6FB08A" />
+  </svg>
+);
+const ClockSVG = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <circle cx="50" cy="50" r="44" fill="#C98F5A" />
+    <circle cx="50" cy="50" r="36" fill="#FFF6E6" stroke="#B07D48" strokeWidth="3" />
+    <circle cx="50" cy="16" r="2.5" fill="#B07D48" /><circle cx="84" cy="50" r="2.5" fill="#B07D48" />
+    <circle cx="50" cy="84" r="2.5" fill="#B07D48" /><circle cx="16" cy="50" r="2.5" fill="#B07D48" />
+    <line x1="50" y1="50" x2="50" y2="28" stroke="#3B2A1A" strokeWidth="4" strokeLinecap="round" />
+    <line x1="50" y1="50" x2="67" y2="58" stroke="#3B2A1A" strokeWidth="4" strokeLinecap="round" />
+    <circle cx="50" cy="50" r="4" fill="#F2745F" />
+  </svg>
+);
+const CatSVG = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <path d="M78 80 q16 -2 13 -17" stroke="#9AA0A6" strokeWidth="9" fill="none" strokeLinecap="round" />
+    <path d="M50 94 C30 94 22 74 24 56 C26 40 37 30 50 30 C63 30 74 40 76 56 C78 74 70 94 50 94 Z" fill="#9AA0A6" />
+    <path d="M30 40 L24 18 L43 31 Z" fill="#9AA0A6" /><path d="M70 40 L76 18 L57 31 Z" fill="#9AA0A6" />
+    <path d="M32 37 L29 25 L39 32 Z" fill="#F7B7C8" /><path d="M68 37 L71 25 L61 32 Z" fill="#F7B7C8" />
+    <ellipse cx="50" cy="58" rx="22" ry="20" fill="#B4B9BE" />
+    <ellipse cx="40" cy="54" rx="4.5" ry="6" fill="#3B2A1A" /><ellipse cx="60" cy="54" rx="4.5" ry="6" fill="#3B2A1A" />
+    <path d="M50 60 l-3 4 6 0 z" fill="#F2748F" />
+    <path d="M47 66 q3 3 6 0" stroke="#3B2A1A" strokeWidth="2" fill="none" strokeLinecap="round" />
+    <path d="M30 60 h-12 M30 65 h-11 M70 60 h12 M70 65 h11" stroke="#7E848A" strokeWidth="1.5" strokeLinecap="round" />
+  </svg>
+);
+const DogSVG = ({ size }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100">
+    <path d="M50 94 C31 94 23 76 25 58 C27 42 38 32 50 32 C62 32 73 42 75 58 C77 76 69 94 50 94 Z" fill="#D8A05A" />
+    <ellipse cx="26" cy="46" rx="9" ry="18" fill="#A8743F" transform="rotate(20 26 46)" />
+    <ellipse cx="74" cy="46" rx="9" ry="18" fill="#A8743F" transform="rotate(-20 74 46)" />
+    <ellipse cx="50" cy="60" rx="22" ry="20" fill="#E8C49A" />
+    <ellipse cx="50" cy="71" rx="12" ry="10" fill="#F3DCBE" />
+    <circle cx="41" cy="56" r="4" fill="#3B2A1A" /><circle cx="59" cy="56" r="4" fill="#3B2A1A" />
+    <ellipse cx="50" cy="67" rx="6" ry="4.5" fill="#3B2A1A" />
+    <path d="M50 71 v5" stroke="#3B2A1A" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
+const FURN = { Sofa: SofaSVG, Armchair: ArmchairSVG, Bed: BedSVG, Table: TableSVG, Chair: ChairSVG, Lamp: LampSVG, Plant: PlantSVG, Shelf: ShelfSVG, TV: TVSVG, Rug: RugSVG, Teddy: TeddySVG, Gift: GiftSVG, Balloon: BalloonSVG, Ball: BallSVG, Frame: FrameSVG, Clock: ClockSVG, Cat: CatSVG, Dog: DogSVG };
+const VARIANTS = { bed: 3, sofa: 3, chair: 3, lamp: 3, rug: 3 };
 
 // ---------- secret containers (tap to open, loot flies to your backpack) ----------
 const WardrobeC = ({ size, open }) => (
@@ -1174,6 +1283,7 @@ function Game() {
     setSel(null);
   };
   const flipItem = (id) => upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === id); if (it) it.flip = !it.flip; });
+  const cycleVar = (id) => upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === id); if (it) { const nv = VARIANTS[it.key] || 1; it.v = ((it.v || 0) + 1) % nv; } });
   const placeChar = (id, x, y) => {
     const ly = clamp(y, CHAR_BAND[0], CHAR_BAND[1]);
     upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current; ch.x = x; ch.y = ly; } });
@@ -1482,7 +1592,7 @@ function Game() {
   if (sel && view === 'building') {
     if (sel.t === 'item') {
       const it = b.items.find((t) => t.id === sel.id);
-      if (it) { const d = ITEMS[it.key]; chip = { x: it.x, y: it.y, h: d.s * (d.r || 1), t: 'item', id: it.id }; }
+      if (it) { const d = ITEMS[it.key]; chip = { x: it.x, y: it.y, h: d.s * (d.r || 1), t: 'item', id: it.id, key: it.key }; }
     } else {
       const ch = placedChars.find((c) => c.id === sel.id);
       if (ch) chip = { x: ch.x, y: ch.y, h: 188, t: 'char', id: ch.id };
@@ -1661,8 +1771,20 @@ function Game() {
               const rs = b.rooms[i] || {};
               return (
                 <div key={i} className="absolute top-0 bottom-0 overflow-hidden" style={{ left: `${(i * 100) / n}%`, width: `${100 / n}%`, ...wallS(rs.w) }}>
-                  <div className="absolute inset-x-0 top-0" style={{ height: 26, background: 'rgba(255,255,255,.55)', boxShadow: '0 3px 0 rgba(0,0,0,.05)' }} />
-                  <div className="absolute inset-x-0 bottom-0" style={{ height: '20%', ...floorS(rs.f), borderTop: '6px solid rgba(0,0,0,.08)', boxShadow: 'inset 0 6px 0 rgba(255,255,255,.25)' }} />
+                  <div className="absolute inset-x-0 top-0" style={{ height: 22, background: 'rgba(255,255,255,.5)', boxShadow: '0 3px 0 rgba(0,0,0,.05)' }} />
+                  <div className="absolute inset-x-0" style={{ top: 0, bottom: '40%', background: 'linear-gradient(180deg, rgba(255,255,255,.10), rgba(0,0,0,0) 28%, rgba(0,0,0,.07))' }} />
+                  <div className="absolute inset-x-0 bottom-0 overflow-hidden" style={{ height: '40%', ...floorS(rs.f) }}>
+                    <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(34,24,16,.30), rgba(34,24,16,.06) 32%, rgba(255,255,255,0) 58%, rgba(255,255,255,.13))' }} />
+                    <svg className="absolute inset-0" width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+                      {[7, 25, 43, 57, 75, 93].map((bx, k) => (
+                        <line key={k} x1={bx} y1="100" x2={50 + (bx - 50) * 0.2} y2="2" stroke="rgba(40,26,14,.10)" strokeWidth="1.2" vectorEffect="non-scaling-stroke" />
+                      ))}
+                      {[16, 36, 60, 84].map((ly, k) => (
+                        <line key={'h' + k} x1="0" y1={ly} x2="100" y2={ly} stroke="rgba(40,26,14,.07)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+                      ))}
+                    </svg>
+                  </div>
+                  <div className="absolute inset-x-0" style={{ bottom: '40%', height: 9, background: 'rgba(0,0,0,.12)', boxShadow: '0 8px 14px rgba(0,0,0,.16)' }} />
                   {rdef.win && (
                     <div className="absolute" style={{ left: '50%', top: '11%', transform: 'translateX(-50%)', width: 128, height: 116, borderRadius: 16, border: '9px solid #8A623F', background: 'linear-gradient(#9ED5FF,#DFF3FF)', boxShadow: '0 6px 14px rgba(60,40,20,.18)' }}>
                       <div className="absolute inset-y-0" style={{ left: '50%', width: 7, marginLeft: -3.5, background: '#8A623F' }} />
@@ -1745,7 +1867,7 @@ function Game() {
                   {def.zone === 'floor' && def.svg !== 'Rug' && !it.on && (
                     <div style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)', width: def.s * 0.72, height: def.s * 0.15, borderRadius: '50%', background: 'radial-gradient(rgba(60,40,30,.25),transparent 70%)' }} />
                   )}
-                  {Fc ? <Fc size={def.s} /> : <span style={{ fontSize: def.s, lineHeight: 1, display: 'block', filter: 'drop-shadow(0 3px 2px rgba(0,0,0,.15))' }}>{def.e}</span>}
+                  {Fc ? <Fc size={def.s} v={it.v || 0} /> : <span style={{ fontSize: def.s, lineHeight: 1, display: 'block', filter: 'drop-shadow(0 3px 2px rgba(0,0,0,.15))' }}>{def.e}</span>}
                 </div>
               );
             })}
@@ -1797,6 +1919,7 @@ function Game() {
                 style={{ left: `${chip.x}%`, top: `calc(${chip.y}% - ${chip.h + 10}px)`, transform: 'translate(-50%,-100%)', zIndex: 1900 }}>
                 {chip.t === 'item' ? (
                   <>
+                    {VARIANTS[chip.key] && <button onClick={() => cycleVar(chip.id)} className="w-10 h-10 rounded-full grid place-items-center shadow-lg active:scale-90" style={{ background: '#FFD166', color: '#5B4636' }}><Shuffle size={17} /></button>}
                     <button onClick={() => flipItem(chip.id)} className="w-10 h-10 rounded-full grid place-items-center shadow-lg active:scale-90" style={{ background: '#FFF', color: '#5B4636' }}><FlipHorizontal2 size={17} /></button>
                     <button onClick={() => removeItem(chip.id)} className="w-10 h-10 rounded-full grid place-items-center shadow-lg active:scale-90" style={{ background: '#FF6B6B', color: '#FFF' }}><Trash2 size={17} /></button>
                   </>
