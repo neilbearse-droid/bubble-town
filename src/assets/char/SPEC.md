@@ -93,25 +93,40 @@ bootstrap pieces carry geometry.
 
 ## 6. AI-gen pipeline
 
-1. Build the template: `node scripts/build-char-template.mjs` → guide PNG.
-2. Generate each asset with the template as the control/reference image so pose
-   and registration match. Keep a **fixed character sheet / seed** for the base
-   so all skin parts and garments stay on-model.
-3. Generate on transparent background (or matte + key out), full canvas.
-4. Hand the files back; integration step: trim to canvas, ensure straight
-   alpha, export `webp` (`alphaQuality 100`), drop in `src/assets/char/`, and
-   add the registry entry. No compositor changes needed.
+Hard rules — these are what make assets drop in cleanly:
+
+- **One part per image.** No sprite sheets. The filename = the part.
+- **Real transparency.** Export PNG with a true alpha channel. If the tool can't,
+  render on a **flat solid `#FF00FF` magenta** matte (NOT a checkerboard — a
+  painted checkerboard reads as opaque art and can't be keyed reliably).
+- **Fixed character / seed.** Same skin, face, line weight and shading across
+  every part so they read as one character.
+- **Draw what the slot says** (see §3) — e.g. `foot` is a **bare foot**, the shoe
+  is a separate `shoes` garment.
+
+Steps:
+
+1. Build the template: `node scripts/build-char-template.mjs` → `_template_guide.png`.
+2. Generate each part with the guide as the control/reference image. The part may
+   fill its own frame (clean + detailed) — it does **not** need to be tiny-in-a-
+   big-canvas. Placement is handled for you in step 4.
+3. Background per the rules above (alpha or magenta); nothing but the one part.
+4. Hand the files back. Integration: key the matte → straight alpha, then
+   composite each part into its **canvas slot** (the labelled region boxes in
+   `scripts/build-char-template.mjs`), export `webp` (`alphaQuality 100`) to
+   `src/assets/char/`, and add the registry entry. Slot placement is
+   deterministic, so independently-drawn parts still land in register.
 
 ### Prompt skeletons
 
-- **Base character (per skin):** "full-body chibi character, neutral A-pose,
-  front view, arms slightly out, bald, even lighting, flat soft-shaded cartoon,
-  centered on transparent background, 584×1024" — then isolate each part from the
-  same render, or inpaint part-by-part on the template.
-- **Garment piece:** "<garment description>, <part> only (e.g. left upper
-  sleeve), worn on the reference body, same scale/pose/lighting, transparent
-  background, nothing else visible." Always name the single part so the model
-  doesn't draw a whole outfit.
+- **Base part (per skin):** "<part name> of a chibi toddler, warm tan skin, bald,
+  big glossy brown eyes (head only), plain light-grey briefs (torso only), flat
+  soft-shaded kawaii cartoon, thick clean dark outline, front view, ONLY the
+  <part> and nothing else, solid #FF00FF magenta background."
+- **Garment piece:** "<garment>, the <part> only (e.g. left upper sleeve), sized
+  to the reference body, same line weight/shading, ONLY that piece, solid
+  #FF00FF magenta background." Always name the single part so the model doesn't
+  draw a whole outfit.
 
 ## 7. Bootstrap state (today)
 
