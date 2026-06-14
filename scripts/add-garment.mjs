@@ -55,7 +55,7 @@ const region = (opt('--region') ? opt('--region').split(':').map(Number) : cfg.r
 // colour (e.g. purple skates), so we keep it.
 const isScreen = (r, g, b, a) =>
   a < 40 ||
-  ((r > 110 && b > 90 && g < Math.min(r, b) * 0.72) && !(g >= 30 && b > r * 1.15)) || // magenta (but keep violet)
+  ((r > 110 && b > 90 && g < 60 && g < Math.min(r, b) * 0.72) && !(g >= 30 && b > r * 1.15)) || // magenta: low-G core, keeps pink (high G) & violet (leans blue)
   (g > 110 && g - r > 40 && g - b > 40); // green
 
 const { data, info } = await sharp(img).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
