@@ -1,136 +1,91 @@
-# Layered paper-doll — art & layer spec
+# Illustrated paper-doll — art & layer spec
 
-This is the contract every body part and garment piece is drawn against. Follow
-it and any new shirt / pants / hair becomes **pure art** — no code or rig
-changes. The authoritative depth order lives in `src/assets/charLayers.js`
-(`CHAR_Z`); this file documents how to fill it.
+How the dress-up character is built. Adding a new outfit (or skin) is **pure
+art** — no code changes. The depth order lives in `src/assets/charLayers.js`
+(`CHAR_Z`); this file is the art contract that fills it.
 
-## 1. Master canvas & registration
+## The trick: magenta-skin chroma key
 
-- **One shared canvas for everything.** Every layer — each body part and each
-  garment piece — is drawn full-frame on the same canvas and exported with a
-  transparent background. The compositor paints purpose-drawn layers at
-  `inset: 0` (no offsets), so *alignment is baked into the canvas*. Draw a
-  sleeve where the arm actually is and it will line up.
-- **Canvas:** `584 × 1024` px (aspect **1.757**, matching `CHAR_BASE_ASPECT`).
-  Transparent. Export **WebP**, `alphaQuality: 100` (or PNG, then convert).
-- **Draw against the template.** Generate the pose/region guide with
-  `node scripts/build-char-template.mjs` and use it as the control image / ref
-  so every asset shares the same body pose and proportions.
-- A piece contains **only its own pixels**; everything else is transparent. No
-  baked drop-shadows onto other parts.
+Every asset is an image-model render in **one fixed pose**, on a solid
+**`#FF00FF` magenta** background. We key out *all* the magenta, so whatever
+survives is a clean, body-conformed, pre-aligned cutout.
 
-## 2. The rig — depth stack (back → front)
+- **Base (the "skin"):** the figure with **normal skin + a simple face**, bald,
+  in plain underwear. Keying removes only the background → the bare body.
+- **Outfit:** the **same figure**, but with **magenta skin and a blank magenta
+  head** (no face), fully dressed. Keying removes the background *and the skin*,
+  leaving only the **clothing + hair**, already shaped to the body.
 
-The body is split into parts so clothing wraps per-limb. The per-limb
-micro-stacks are what make sleeve and trouser *lengths* work for free:
+Stacking an outfit over the base then gives correct occlusion **for free**: where
+clothing exposes skin (neck, hands, the forearm below a short sleeve), that skin
+was magenta → keyed to transparent → the base shows through. No rig, no per-limb
+slots, no geometry. Each layer is just a full-canvas PNG painted at `inset: 0`.
 
+### Why it must be the same pose
+The base and every outfit are separate renders, so they only line up if they
+share the **exact pose, proportions, scale, and crop**. Generate each new render
+**using the base as the reference/control image**, changing only skin/face and
+the clothes. Same `1024 × 1536` frame, centered, identical crop.
+
+## Prompts
+
+**Base (per skin tone):**
 ```
-arm :  arm_upper → sleeve_upper → arm_fore → sleeve_fore → hand
-leg :  leg_thigh → bottom_thigh → leg_shin → bottom_shin → foot → shoe
-head:  hair.back → head → ear → collar → hair.front (bangs)
-torso: top.torso_back → torso → top.torso_front
-```
-
-So a **short** sleeve only fills `sleeve_upper`; the bare `arm_fore` paints in
-front of it. A **long** sleeve also fills `sleeve_fore`, covering the forearm,
-with the `hand` always in front of the cuff. Same idea for **shorts** (fill
-`bottom_thigh` only) vs **trousers** (`bottom_thigh` + `bottom_shin`).
-
-Full order is `CHAR_Z` in `charLayers.js`. Missing slots are skipped, so the rig
-lights up part-by-part as art arrives.
-
-## 3. Base body parts (the "skin")
-
-Drawn once per skin tone. Each is a full-canvas cutout of just that part.
-
-| Slot (`base: …`) | What to draw |
-|---|---|
-| `head` | head, face, neck (everything above the shoulders, minus ears) |
-| `ear_l` / `ear_r` | the two ears (so side-hair can tuck behind them) |
-| `torso` | chest + belly + hips |
-| `arm_upper_l/r` | shoulder → elbow |
-| `arm_fore_l/r` | elbow → wrist |
-| `hand_l/r` | the hands |
-| `leg_thigh_l/r` | hip → knee |
-| `leg_shin_l/r` | knee → ankle |
-| `foot_l/r` | bare feet (covered when shoes are worn) |
-
-> Adjacent parts should **overlap by a few px** at the joints so no seam shows
-> when nothing is layered between them.
-
-## 4. Garment piece checklist (by type)
-
-Draw only the pieces a garment needs; omit the rest.
-
-| Garment | Pieces (`<cat>: …`) |
-|---|---|
-| Tank / sleeveless top | `top: torso_front` (+ `torso_back` if open) |
-| T-shirt (short sleeve) | `torso_front` + `sleeve_upper_l/r` (+ `collar`) |
-| Long-sleeve / jacket | `torso_front` + `sleeve_upper_l/r` + `sleeve_fore_l/r` (+ `collar`, + `torso_back` if open) |
-| Shorts | `bottom: thigh_l/r` |
-| Trousers | `bottom: thigh_l/r` + `shin_l/r` |
-| Shoes | `shoes: l` + `shoes: r` |
-| Hair | `hair: back` (length behind head) + `hair: front` (bangs) |
-| Accessory | `acc: front` |
-
-An **open** jacket needs `torso_back` (the lining behind the body) so the shirt/
-torso shows through the opening; a closed top doesn't.
-
-## 5. File naming
-
-Flat files in `src/assets/char/`, imported by `import.meta.glob`:
-
-```
-base_<skin>_<part>.webp      e.g. base_tan_head.webp, base_tan_arm_upper_l.webp
-<cat>_<variant>_<part>.webp  e.g. top_puffer_torso_front.webp, bottom_jeans_thigh_l.webp
-hair_<variant>_<back|front>.webp
+Use the attached reference figure. Keep the EXACT same character, pose, body
+proportions, scale, and framing. Skin: <tan> normal soft-shaded skin. Add a
+simple cute face — two big glossy dark eyes, small nose, small smile, rosy
+cheeks. Bald, wearing only plain light-grey underwear. Same 3D-ish soft-shaded
+chibi render style. Full body, centered, on a solid #FF00FF magenta background.
 ```
 
-Register each file in `charLayers.js` under its category → variant → part. A
-purpose-drawn (full-canvas) piece needs **no** `{ w, cx, cy }`; only the legacy
-bootstrap pieces carry geometry.
+**Outfit (complete look):**
+```
+Use the attached reference figure. Keep the EXACT same character, pose,
+proportions, scale, and framing, arms in the same position. Paint ALL SKIN solid
+#FF00FF magenta and make the HEAD a blank magenta blob with NO face. Background:
+solid #FF00FF magenta. Dress the figure (each item normal colors):
+  • Top:    <a mustard hoodie>
+  • Bottom: <blue jeans>
+  • Shoes:  <white sneakers>
+  • Hair:   <short brown hair, FULL and dense, tufts overlapping with NO gaps,
+            fully covering the crown and back — no scalp/background showing>
+Same render style as the reference. Full body, identical crop, magenta background.
+```
 
-## 6. AI-gen pipeline
+> Keep the head a **blank magenta blob** (hair on top is fine — hair is the one
+> head thing we keep). Any face features left on would survive the key.
+> Make hair **full/dense** or the background pokes through the tufts (auto-sealed
+> in integration, but fuller art is cleaner).
 
-Hard rules — these are what make assets drop in cleanly:
+## Integration (what the maintainer runs on a new render)
 
-- **One part per image.** No sprite sheets. The filename = the part.
-- **Real transparency.** Export PNG with a true alpha channel. If the tool can't,
-  render on a **flat solid `#FF00FF` magenta** matte (NOT a checkerboard — a
-  painted checkerboard reads as opaque art and can't be keyed reliably).
-- **Fixed character / seed.** Same skin, face, line weight and shading across
-  every part so they read as one character.
-- **Draw what the slot says** (see §3) — e.g. `foot` is a **bare foot**, the shoe
-  is a separate `shoes` garment.
+1. **Key** the magenta: a pixel is background/skin if `R>110 && B>90 && G <
+   min(R,B)*0.72`. Everything else is kept.
+2. **De-spill** (hue-safe): `m = min(R,B); if (m > G) { R -= m-G; B -= m-G }` —
+   removes the magenta fringe without shifting warm colors.
+3. **Drop specks:** connected-component the alpha, discard islands `< ~0.3%` of
+   the frame (kills stray dark outline bits from hands/feet).
+4. **Seal hair gaps:** in the head region, fill transparent pixels that are
+   mostly surrounded by opaque hair with the local hair color.
+5. Export `webp` (`alphaQuality: 100`) to `src/assets/char/` and register it.
 
-Steps:
+## File naming & registry
 
-1. Build the template: `node scripts/build-char-template.mjs` → `_template_guide.png`.
-2. Generate each part with the guide as the control/reference image. The part may
-   fill its own frame (clean + detailed) — it does **not** need to be tiny-in-a-
-   big-canvas. Placement is handled for you in step 4.
-3. Background per the rules above (alpha or magenta); nothing but the one part.
-4. Hand the files back. Integration: key the matte → straight alpha, then
-   composite each part into its **canvas slot** (the labelled region boxes in
-   `scripts/build-char-template.mjs`), export `webp` (`alphaQuality 100`) to
-   `src/assets/char/`, and add the registry entry. Slot placement is
-   deterministic, so independently-drawn parts still land in register.
+```
+base_<skin>.webp          e.g. base_tan.webp
+outfit_<name>.webp        e.g. outfit_everyday.webp
+```
 
-### Prompt skeletons
+Register in `charLayers.js`:
+```
+base:   { tan:      { body: { url: u('base_tan') } } }
+outfit: { everyday: { full: { url: u('outfit_everyday') } } }
+```
 
-- **Base part (per skin):** "<part name> of a chibi toddler, warm tan skin, bald,
-  big glossy brown eyes (head only), plain light-grey briefs (torso only), flat
-  soft-shaded kawaii cartoon, thick clean dark outline, front view, ONLY the
-  <part> and nothing else, solid #FF00FF magenta background."
-- **Garment piece:** "<garment>, the <part> only (e.g. left upper sleeve), sized
-  to the reference body, same line weight/shading, ONLY that piece, solid
-  #FF00FF magenta background." Always name the single part so the model doesn't
-  draw a whole outfit.
+## Later: mix-and-match
 
-## 7. Bootstrap state (today)
-
-The current art is **placeholder**, sliced from the original flat illustration:
-`base_tan` (whole figure → `torso` slot) + `base_tan_hands`, the `puffer` (open
-jacket back/front), and the `bob` hair (back/front). These carry geometry and
-will be replaced by purpose-drawn, full-canvas parts following §1–§5.
+Complete outfits look best and are the default. To mix tops/bottoms/shoes
+independently, render each **item alone** on the magenta figure (same pose) and
+add per-category layers to `CHAR_Z` (`bottom → top → shoes → hair`), keyed the
+same way. The stack order is the only thing that matters; alignment is inherited
+from the shared pose.

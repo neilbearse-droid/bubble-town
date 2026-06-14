@@ -2,21 +2,16 @@ import { useState } from 'react';
 import { CHAR_LAYERS, CHAR_BASE_ASPECT, CHAR_Z, CHAR_KEYS } from '../assets/charLayers.js';
 
 // Layered illustrated paper-doll. `c` maps each category to a layer key:
-//   { skinKey, bottomKey, shoesKey, topKey, hairKey, accKey }
-// The body is rigged into depth-ordered parts and garments interleave between
-// them (CHAR_Z), so clothing wraps the character instead of sitting flat on top
-// — e.g. hair length behind the head with bangs over the forehead, hands in
-// front of the sleeves, and shoes over the trouser cuffs (see SPEC.md).
-//
-// Every layer registers to the same frame. Purpose-drawn art is authored
-// full-canvas (no geometry → painted at inset 0); legacy trimmed pieces carry a
-// normalised { w, cx, cy } and are centred + scaled. Missing slots are skipped,
-// so the rig lights up part-by-part as art lands.
+//   { skinKey, outfitKey }
+// Each layer is a full-canvas, pre-aligned cutout produced by keying magenta off
+// a fixed-pose render (see SPEC.md), so the base + outfit just stack at inset 0
+// in CHAR_Z order. Bare skin keys to transparent, so the outfit shows the base
+// through it for free (hands in front of sleeves, etc.) — no rig, no geometry.
 const FULL_FRAME = { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', pointerEvents: 'none' };
 
 function CharSprite({ c = {}, size = 132, style }) {
   const base = CHAR_LAYERS.base[c.skinKey] || Object.values(CHAR_LAYERS.base)[0];
-  const keyFor = { base, bottom: c.bottomKey, shoes: c.shoesKey, top: c.topKey, hair: c.hairKey, acc: c.accKey };
+  const keyFor = { base, outfit: c.outfitKey };
   return (
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>
       {CHAR_Z.map((slot, i) => {
@@ -38,10 +33,7 @@ function CharSprite({ c = {}, size = 132, style }) {
 // ---- Beta preview: pick from the (currently small) illustrated wardrobe ----
 const startLook = () => ({
   skinKey: CHAR_KEYS.base[0],
-  hairKey: CHAR_KEYS.hair[0] || null,
-  topKey: CHAR_KEYS.top[0] || null,
-  bottomKey: CHAR_KEYS.bottom[0] || null,
-  shoesKey: CHAR_KEYS.shoes[0] || null,
+  outfitKey: CHAR_KEYS.outfit[0] || null,
 });
 
 function CharSpriteDemo({ onClose }) {
@@ -69,10 +61,7 @@ function CharSpriteDemo({ onClose }) {
         <div className="grid place-items-center mt-2 rounded-2xl" style={{ background: 'rgba(162,75,255,0.14)', minHeight: 300, overflow: 'hidden' }}>
           <CharSprite c={look} size={150} />
         </div>
-        <Row label="Hair" cat="hair" field="hairKey" />
-        <Row label="Top" cat="top" field="topKey" />
-        <Row label="Bottom" cat="bottom" field="bottomKey" />
-        <Row label="Shoes" cat="shoes" field="shoesKey" />
+        <Row label="Outfit" cat="outfit" field="outfitKey" />
         <p className="text-xs mt-4 leading-relaxed" style={{ color: '#9D95C0' }}>
           Early preview of the layered illustrated dress-up. More hairstyles, outfits, bottoms & accessories are on the way ✨
         </p>
