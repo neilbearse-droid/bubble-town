@@ -8,6 +8,6 @@
 // integrity check — can import the data layer without a build step.
 export const CHAR_SKIN_KEYS = ['tan'];
 export const CHAR_HAIR_KEYS = ['tousle', 'bob'];
-export const CHAR_TOP_KEYS = ['hoodie', 'tank', 'red', 'poptee', 'unicorn', 'cupcake', 'band'];
+export const CHAR_TOP_KEYS = ['hoodie', 'tank', 'red', 'poptee', 'unicorn', 'cupcake', 'band', 'the1975'];
 export const CHAR_BOTTOM_KEYS = ['flares'];
 export const CHAR_SHOE_KEYS = ['white', 'canvas'];
