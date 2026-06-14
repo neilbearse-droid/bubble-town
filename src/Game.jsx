@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { CIMG, IMG } from './assets/images.js';
 import { CharSVG, Opt, Sw } from './components/charsvg.jsx';
+import { CharSpriteDemo } from './components/charsprite.jsx';
 import { CONTAINER_DEFS } from './components/containers.jsx';
 import { EXT, StairsSVG } from './components/exteriors.jsx';
 import { FURN, VARIANTS } from './components/furniture.jsx';
@@ -23,6 +24,7 @@ function Game() {
   const [sel, setSel] = useState(null);
   const [creator, setCreator] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [showSprite, setShowSprite] = useState(false);
   const [resetArm, setResetArm] = useState(false);
   const [saveStat, setSaveStat] = useState('');
   const [drag, setDrag] = useState(null);
@@ -1243,6 +1245,10 @@ function Game() {
               className="mt-3 w-full rounded-2xl px-4 py-3 text-sm font-bold flex items-center justify-between active:scale-95" style={{ background: 'rgba(255,255,255,0.08)', color: '#ECE7FA' }}>
               <span>🔊 Sound</span><span>{(st.sound !== false) ? 'On ✓' : 'Off'}</span>
             </button>
+            <button onClick={() => { setShowSettings(false); setShowSprite(true); }}
+              className="mt-3 w-full rounded-2xl px-4 py-3 text-sm font-bold flex items-center justify-between active:scale-95" style={{ background: 'rgba(162,75,255,0.18)', color: '#C9A7FF' }}>
+              <span>✨ Illustrated friend</span><span>Beta</span>
+            </button>
             <button onClick={() => { if (!resetArm) { setResetArm(true); return; } resetWorld(); }}
               className="mt-4 w-full rounded-2xl px-4 py-3 text-sm font-bold active:scale-95"
               style={{ background: resetArm ? '#FF8FA3' : 'rgba(255,90,110,0.16)', color: resetArm ? '#FFF' : '#FF8FA3' }}>
@@ -1251,6 +1257,9 @@ function Game() {
           </div>
         </div>
       )}
+
+      {/* illustrated sprite dress-up (beta) */}
+      {showSprite && <CharSpriteDemo onClose={() => setShowSprite(false)} />}
     </div>
   );
 }
