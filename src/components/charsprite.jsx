@@ -46,8 +46,8 @@ function CharSprite({ c = {}, size = 132, style }) {
   const layers = [base.body.url];
   if (footLayer) layers.push(footLayer.url);
   for (const k of order) { if (url[k]) layers.push(url[k]); }
-  if (hairG) layers.push(hairG.full.url);
-  if (hatG) layers.push(hatG.full.url); // hat over hair (crown)
+  if (hairG && !hatG) layers.push(hairG.full.url); // a hat is worn on a bald head — hide the hair
+  if (hatG) layers.push(hatG.full.url);
 
   return (
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>
