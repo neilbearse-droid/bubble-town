@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import { CIMG, IMG } from './assets/images.js';
-import { CharSVG, Opt, Sw } from './components/charsvg.jsx';
-import { CharSpriteDemo } from './components/charsprite.jsx';
+import { Sw } from './components/charsvg.jsx';
+import { CharSprite } from './components/charsprite.jsx';
+import { CHAR_KEYS, CHAR_BASE_ASPECT } from './assets/charLayers.js';
 import { CONTAINER_DEFS } from './components/containers.jsx';
 import { EXT, StairsSVG } from './components/exteriors.jsx';
 import { FURN, VARIANTS } from './components/furniture.jsx';
 import { Backpack, ChevronLeft, FlipHorizontal2, Paintbrush, Pencil, Plus, Settings, Shuffle, Sofa, Trash2, Users, X } from './components/icons.jsx';
 import { BUILDABLE_IDS, BUILDINGS, MAP_SPOTS, bRooms, bSecrets, defaultState, freshBuilding, randomChar } from './data/buildings.js';
 import { EVENTS } from './data/events.js';
-import { ACC, BAND, CATS, CHAR_BAND, EYES, FLOORS, HAIRC, HAIRSTYLES, ITEMS, LOOT_KEYS, OUTFITC, OUTFITS, SKINS, WALLS, floorS, wallS } from './data/items.js';
+import { BAND, CATS, CHAR_BAND, FLOORS, ITEMS, LOOT_KEYS, WALLS, floorS, wallS } from './data/items.js';
 import { setSoundOn, sfx, resumeAudio } from './lib/sound.js';
 import { storage } from './lib/storage.js';
 import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
@@ -24,7 +25,6 @@ function Game() {
   const [sel, setSel] = useState(null);
   const [creator, setCreator] = useState(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [showSprite, setShowSprite] = useState(false);
   const [resetArm, setResetArm] = useState(false);
   const [saveStat, setSaveStat] = useState('');
   const [drag, setDrag] = useState(null);
@@ -70,13 +70,21 @@ function Game() {
             if (p.sound === undefined) p.sound = true;
             if (p.night === undefined) p.night = false;
             if (p.event === undefined) p.event = null;
-            if (!p.buildingsV || p.buildingsV < 3) {
+            if (!p.buildingsV || p.buildingsV < 4) {
               const ns = defaultState();
               ns.sound = p.sound; ns.night = p.night; ns.event = p.event;
               ns.backpack = p.backpack || {};
               ns.plots = p.plots;
+              // The old SVG character look (skin/hair/outfit colors) is retired; keep
+              // each friend's identity & place, give them an illustrated outfit.
               if (Array.isArray(p.chars) && p.chars.length) {
-                ns.chars = p.chars.map((c) => ({ ...c, floor: 0, x: clamp(c.x == null ? 50 : c.x, 2, 98), y: clamp(c.y == null ? 92 : c.y, CHAR_BAND[0], CHAR_BAND[1]) }));
+                ns.chars = p.chars.map((c, i) => ({
+                  id: c.id || uid(), name: c.name || 'Friend',
+                  skinKey: CHAR_KEYS.base[0], outfitKey: CHAR_KEYS.outfit[i % CHAR_KEYS.outfit.length],
+                  building: c.building || null, floor: 0,
+                  x: clamp(c.x == null ? 50 : c.x, 2, 98), y: clamp(c.y == null ? 92 : c.y, CHAR_BAND[0], CHAR_BAND[1]),
+                  ...(c.inTub ? { inTub: c.inTub } : {}),
+                }));
               }
               p.plots.forEach((pid) => { if (pid && !ns.buildings[pid]) ns.buildings[pid] = freshBuilding(pid); });
               setSt(ns); return;
@@ -92,13 +100,11 @@ function Game() {
           const old = await storage.get(OLDKEY);
           if (old && old.value) {
             const o = JSON.parse(old.value);
-            const hairMap = { short: 'swoop', long: 'long', buns: 'buns', ponytail: 'ponytail', curly: 'puffs', none: 'swoop' };
             if (o.chars && o.chars.length) {
-              fresh.chars = o.chars.map((c) => ({
-                id: c.id || uid(), name: c.name || 'Friend', skin: c.skin || SKINS[0],
-                hair: hairMap[c.hair] || 'swoop', hairColor: c.hairColor || HAIRC[0],
-                top: c.top || OUTFITC[0], bottom: c.bottom || OUTFITC[5],
-                outfit: 'tee', eyes: '#6B4226', building: null, x: 50, y: 92,
+              fresh.chars = o.chars.map((c, i) => ({
+                id: c.id || uid(), name: c.name || 'Friend',
+                skinKey: CHAR_KEYS.base[0], outfitKey: CHAR_KEYS.outfit[i % CHAR_KEYS.outfit.length],
+                building: null, floor: 0, x: 50, y: 92,
               }));
             }
           }
@@ -254,7 +260,7 @@ function Game() {
     const d = creator;
     upd((c) => {
       if (d.id && c.chars.some((x) => x.id === d.id)) {
-        Object.assign(c.chars.find((x) => x.id === d.id), { name: d.name || 'Friend', skin: d.skin, hair: d.hair, hairColor: d.hairColor, top: d.top, bottom: d.bottom, outfit: d.outfit, eyes: d.eyes, acc: d.acc || 'none' });
+        Object.assign(c.chars.find((x) => x.id === d.id), { name: d.name || 'Friend', skinKey: d.skinKey, outfitKey: d.outfitKey });
       } else {
         c.chars.push({ ...d, id: uid(), name: d.name || 'Friend', building: null, x: 50, y: 92 });
       }
@@ -874,11 +880,10 @@ function Game() {
               const isSel = sel && sel.t === 'char' && sel.id === c.id;
               const waving = !!reacts[c.id];
               const eatingThis = eating && eating.charId === c.id;
-              const mouthState = ((eatingThis && eating.step % 2 === 0) || (feed && feed.charId === c.id)) ? 'open' : 'smile';
               const tubItem = (c.inTub && !isDrag) ? b.items.find((t) => t.id === c.inTub && ITEMS[t.key] && ITEMS[t.key].tub) : null;
               if (tubItem) {
-                const cs = 122, chestFrac = 0.56;
-                const HcPct = (cs * 1.4) / vpH * 100;
+                const cs = 92, chestFrac = 0.56;
+                const HcPct = (cs * CHAR_BASE_ASPECT) / vpH * 100;
                 const waterY = surfTopY(tubItem, vpH);
                 const cyTub = waterY + (1 - chestFrac) * HcPct;
                 const clipB = Math.round((1 - chestFrac) * 100);
@@ -894,7 +899,7 @@ function Game() {
                       </div>
                     )}
                     <div style={{ animation: `ttbob 3s ease-in-out ${i * 0.3}s infinite alternate`, clipPath: `inset(0 0 ${clipB}% 0)`, WebkitClipPath: `inset(0 0 ${clipB}% 0)`, filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
-                      <CharSVG c={c} size={cs} mood="relaxed" mouth="smile" />
+                      <CharSprite c={c} size={cs} />
                     </div>
                   </div>
                 );
@@ -902,7 +907,7 @@ function Game() {
               return (
                 <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
                   style={{ position: 'absolute', left: `${c.x}%`, top: `${c.y}%`, transform: 'translate(-50%,-100%)', zIndex: Math.round(c.y * 10) + 5, touchAction: 'none', cursor: 'grab', transition: isDrag ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)' }}>
-                  <div style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)', width: 86, height: 16, borderRadius: '50%', background: 'radial-gradient(rgba(60,40,30,.28),transparent 70%)' }} />
+                  <div style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)', width: 60, height: 14, borderRadius: '50%', background: 'radial-gradient(rgba(60,40,30,.28),transparent 70%)' }} />
                   {waving && (
                     <div className="absolute" style={{ left: '50%', top: -6, transform: 'translate(-50%,-100%)', zIndex: 8, animation: 'ttpop .25s ease' }}>
                       <div style={{ background: '#2E2059', color: '#ECE7FA', fontWeight: 700, fontSize: 13, padding: '6px 12px', borderRadius: 16, boxShadow: '0 6px 14px rgba(60,40,20,.22)', whiteSpace: 'nowrap' }}>{reacts[c.id]}</div>
@@ -910,7 +915,7 @@ function Game() {
                     </div>
                   )}
                   <div style={{ animation: isDrag ? 'none' : (waving ? 'ttwiggle .4s ease-in-out 3' : `ttbob 2.4s ease-in-out ${i * 0.35}s infinite alternate`), transform: isDrag ? 'scale(1.1) rotate(3deg)' : 'none', filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
-                    <CharSVG c={c} size={132} pose={waving ? 'wave' : undefined} mouth={mouthState} />
+                    <CharSprite c={c} size={100} />
                   </div>
                   {eatingThis && (
                     <span className="absolute" style={{ left: '50%', top: 64, transform: `translate(-50%,-50%) scale(${Math.max(0.18, 1 - eating.step * 0.24)})`, fontSize: 36, zIndex: 7, pointerEvents: 'none', transition: 'transform .15s ease' }}>{IMG[eating.key] ? <img src={IMG[eating.key]} style={{ width: 46, height: 'auto', display: 'block' }} /> : ITEMS[eating.key].e}</span>
@@ -1033,7 +1038,7 @@ function Game() {
       {drag && ghost && (drag.kind === 'new-item' || drag.kind === 'new-rare' || drag.kind === 'place-char') && (
         <div className="fixed pointer-events-none" style={{ left: ghost.x, top: ghost.y, transform: 'translate(-50%,-70%)', zIndex: 2200 }}>
           {drag.kind === 'place-char'
-            ? (() => { const ch = st.chars.find((c) => c.id === drag.id); return ch ? <CharSVG c={ch} size={86} style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }} /> : null; })()
+            ? (() => { const ch = st.chars.find((c) => c.id === drag.id); return ch ? <CharSprite c={ch} size={66} style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }} /> : null; })()
             : (() => { const def = ITEMS[drag.key]; const Fc = def.svg ? FURN[def.svg] : null; return IMG[drag.key] ? <img src={IMG[drag.key]} style={{ width: def.s * 0.7, height: 'auto', display: 'block', filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }} /> : Fc ? <div style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }}><Fc size={def.s * 0.7} /></div> : <span style={{ fontSize: 52, filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }}>{def.e}</span>; })()}
         </div>
       )}
@@ -1107,8 +1112,8 @@ function Game() {
                     {st.chars.map((c) => (
                       <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'place-char', id: c.id })}
                         className="shrink-0 w-20 rounded-2xl flex flex-col items-center justify-end pb-1 relative active:scale-95"
-                        style={{ background: c.building ? 'rgba(111,231,183,0.16)' : 'rgba(255,255,255,0.06)', height: 96, touchAction: 'pan-x', cursor: 'grab' }}>
-                        <CharSVG c={c} size={52} />
+                        style={{ background: c.building ? 'rgba(111,231,183,0.16)' : 'rgba(255,255,255,0.06)', height: 96, touchAction: 'pan-x', cursor: 'grab', overflow: 'hidden' }}>
+                        <CharSprite c={c} size={42} />
                         <span className="text-[10px] font-bold truncate w-full text-center px-1" style={{ color: '#ECE7FA' }}>{c.name}</span>
                         {c.building && <span className="absolute top-1 right-1 text-[10px]">{BUILDINGS[c.building].e}</span>}
                       </div>
@@ -1119,8 +1124,8 @@ function Game() {
                       <div className="text-[11px] font-bold mb-1.5" style={{ color: EVENTS[st.event].accent }}>{EVENTS[st.event].e} {EVENTS[st.event].n} friends · tap to add</div>
                       <div className="flex gap-2 overflow-x-auto no-sb pb-3">
                         {EVENTS[st.event].chars.map((pc, idx) => (
-                          <button key={idx} onClick={() => addPreset(pc)} className="shrink-0 w-20 rounded-2xl flex flex-col items-center justify-end pb-1 active:scale-95" style={{ background: 'rgba(255,111,181,0.14)', border: `2px solid ${EVENTS[st.event].accent}`, height: 96 }}>
-                            <CharSVG c={pc} size={52} />
+                          <button key={idx} onClick={() => addPreset(pc)} className="shrink-0 w-20 rounded-2xl flex flex-col items-center justify-end pb-1 active:scale-95" style={{ background: 'rgba(255,111,181,0.14)', border: `2px solid ${EVENTS[st.event].accent}`, height: 96, overflow: 'hidden' }}>
+                            <CharSprite c={pc} size={42} />
                             <span className="text-[10px] font-bold truncate w-full text-center px-1" style={{ color: '#ECE7FA' }}>{pc.name}</span>
                           </button>
                         ))}
@@ -1179,8 +1184,8 @@ function Game() {
               <button onClick={() => setCreator(null)} className="rounded-full p-2 active:scale-90" style={{ background: 'rgba(255,255,255,0.08)', color: '#ECE7FA' }}><X size={16} /></button>
             </div>
             <div className="flex items-center gap-3 mt-2">
-              <div className="rounded-2xl grid place-items-center shrink-0" style={{ background: 'rgba(162,75,255,0.24)', width: 128, height: 176 }}>
-                <CharSVG c={creator} size={110} />
+              <div className="rounded-2xl grid place-items-center shrink-0" style={{ background: 'rgba(162,75,255,0.24)', width: 128, height: 176, overflow: 'hidden' }}>
+                <CharSprite c={creator} size={88} />
               </div>
               <div className="flex-1 min-w-0">
                 <input value={creator.name} onChange={(e) => setCreator({ ...creator, name: e.target.value })} maxLength={14} placeholder="Name"
@@ -1191,31 +1196,26 @@ function Game() {
                 </button>
               </div>
             </div>
-            <Opt l="Skin">{SKINS.map((s) => <Sw key={s} active={creator.skin === s} onClick={() => setCreator({ ...creator, skin: s })} style={{ background: s }} />)}</Opt>
-            <Opt l="Hair style">
-              {HAIRSTYLES.map((h) => (
-                <button key={h} onClick={() => setCreator({ ...creator, hair: h })} className="rounded-2xl overflow-hidden active:scale-95"
-                  style={{ width: 52, height: 58, background: '#2E2059', outline: creator.hair === h ? '3px solid #4D96FF' : '2px solid rgba(0,0,0,.08)', outlineOffset: -2 }}>
-                  <CharSVG c={{ ...creator, hair: h }} size={48} />
-                </button>
-              ))}
-            </Opt>
-            <Opt l="Hair color">{HAIRC.map((s) => <Sw key={s} active={creator.hairColor === s} onClick={() => setCreator({ ...creator, hairColor: s })} style={{ background: s }} />)}</Opt>
-            <Opt l="Outfit">
-              {OUTFITS.map((o) => (
-                <button key={o.id} onClick={() => setCreator({ ...creator, outfit: o.id })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95"
-                  style={{ background: creator.outfit === o.id ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: creator.outfit === o.id ? '#FFF' : '#A24BFF' }}>{o.n}</button>
-              ))}
-            </Opt>
-            <Opt l="Top color">{OUTFITC.map((s) => <Sw key={s} active={creator.top === s} onClick={() => setCreator({ ...creator, top: s })} style={{ background: s }} />)}</Opt>
-            <Opt l={creator.outfit === 'dress' ? 'Hem & trim' : 'Bottoms'}>{OUTFITC.map((s) => <Sw key={s} active={creator.bottom === s} onClick={() => setCreator({ ...creator, bottom: s })} style={{ background: s }} />)}</Opt>
-            <Opt l="Eyes">{EYES.map((s) => <Sw key={s} active={creator.eyes === s} onClick={() => setCreator({ ...creator, eyes: s })} style={{ background: s }} />)}</Opt>
-            <Opt l="Accessory">
-              {ACC.map((a) => (
-                <button key={a.id} onClick={() => setCreator({ ...creator, acc: a.id })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95"
-                  style={{ background: (creator.acc || 'none') === a.id ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: (creator.acc || 'none') === a.id ? '#FFF' : '#A24BFF' }}>{a.n}</button>
-              ))}
-            </Opt>
+            {CHAR_KEYS.base.length > 1 && (
+              <div className="mt-3">
+                <div className="text-xs font-bold mb-1.5" style={{ color: '#9D95C0' }}>Skin</div>
+                <div className="flex flex-wrap gap-2">
+                  {CHAR_KEYS.base.map((k) => (
+                    <button key={k} onClick={() => setCreator({ ...creator, skinKey: k })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95 capitalize"
+                      style={{ background: creator.skinKey === k ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: creator.skinKey === k ? '#FFF' : '#A24BFF' }}>{k}</button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <div className="mt-3">
+              <div className="text-xs font-bold mb-1.5" style={{ color: '#9D95C0' }}>Outfit</div>
+              <div className="flex flex-wrap gap-2">
+                {CHAR_KEYS.outfit.map((k) => (
+                  <button key={k} onClick={() => setCreator({ ...creator, outfitKey: k })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95 capitalize"
+                    style={{ background: creator.outfitKey === k ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: creator.outfitKey === k ? '#FFF' : '#A24BFF' }}>{k}</button>
+                ))}
+              </div>
+            </div>
             <div className="flex gap-2 mt-4">
               {creator.id && (
                 <button onClick={() => deleteChar(creator.id)} className="rounded-2xl px-4 py-3 active:scale-95" style={{ background: 'rgba(255,90,110,0.16)', color: '#FF8FA3' }}>
@@ -1245,10 +1245,6 @@ function Game() {
               className="mt-3 w-full rounded-2xl px-4 py-3 text-sm font-bold flex items-center justify-between active:scale-95" style={{ background: 'rgba(255,255,255,0.08)', color: '#ECE7FA' }}>
               <span>🔊 Sound</span><span>{(st.sound !== false) ? 'On ✓' : 'Off'}</span>
             </button>
-            <button onClick={() => { setShowSettings(false); setShowSprite(true); }}
-              className="mt-3 w-full rounded-2xl px-4 py-3 text-sm font-bold flex items-center justify-between active:scale-95" style={{ background: 'rgba(162,75,255,0.18)', color: '#C9A7FF' }}>
-              <span>✨ Illustrated friend</span><span>Beta</span>
-            </button>
             <button onClick={() => { if (!resetArm) { setResetArm(true); return; } resetWorld(); }}
               className="mt-4 w-full rounded-2xl px-4 py-3 text-sm font-bold active:scale-95"
               style={{ background: resetArm ? '#FF8FA3' : 'rgba(255,90,110,0.16)', color: resetArm ? '#FFF' : '#FF8FA3' }}>
@@ -1258,8 +1254,6 @@ function Game() {
         </div>
       )}
 
-      {/* illustrated sprite dress-up (beta) */}
-      {showSprite && <CharSpriteDemo onClose={() => setShowSprite(false)} />}
     </div>
   );
 }

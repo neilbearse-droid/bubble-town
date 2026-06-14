@@ -9,11 +9,13 @@
 // transparent, so the base shows through automatically = correct occlusion for
 // free. Every layer is a full-canvas, pre-aligned cutout: no per-piece geometry,
 // no slot fitting. Layers just paint at inset 0 in CHAR_Z order.
+import { CHAR_SKIN_KEYS, CHAR_OUTFIT_KEYS } from '../data/charKeys.js';
+
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
 
-// height / width of the base figure frame (1024 × 1536 renders)
-export const CHAR_BASE_ASPECT = 1.5;
+// height / width of the trimmed base figure frame
+export const CHAR_BASE_ASPECT = 1.866;
 
 // Depth stack, back -> front. Each layer is one full-canvas image; missing keys
 // are skipped, so the wardrobe lights up as art lands.
@@ -22,14 +24,12 @@ export const CHAR_Z = [
   { outfit: 'full' }, // a complete look (hair + top + bottom + shoes), keyed in one pass
 ];
 
+// Built from the canonical key lists: each skin is base_<skin>.webp, each outfit
+// is outfit_<outfit>.webp. Add a key in charKeys.js + drop the matching asset in
+// char/ and it lights up everywhere.
 export const CHAR_LAYERS = {
-  base: {
-    tan: { body: { url: u('base_tan') } },
-  },
-  outfit: {
-    everyday: { full: { url: u('outfit_everyday') } }, // brown hair, mustard hoodie, jeans, sneakers
-    futurepop: { full: { url: u('outfit_futurepop') } }, // blue bob, FUTURE POP tank, flared jeans, sneakers
-  },
+  base: Object.fromEntries(CHAR_SKIN_KEYS.map((k) => [k, { body: { url: u('base_' + k) } }])),
+  outfit: Object.fromEntries(CHAR_OUTFIT_KEYS.map((k) => [k, { full: { url: u('outfit_' + k) } }])),
 };
 
 // keys present for each category (handy for the wardrobe UI)

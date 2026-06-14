@@ -71,16 +71,20 @@ Same render style as the reference. Full body, identical crop, magenta backgroun
 
 ## File naming & registry
 
+Assets follow a naming convention so a new look needs **no wiring**:
 ```
 base_<skin>.webp          e.g. base_tan.webp
 outfit_<name>.webp        e.g. outfit_everyday.webp
 ```
 
-Register in `charLayers.js`:
-```
-base:   { tan:      { body: { url: u('base_tan') } } }
-outfit: { everyday: { full: { url: u('outfit_everyday') } } }
-```
+To add a skin or outfit:
+1. Drop the trimmed `.webp` in `src/assets/char/`.
+2. Add its key to `src/data/charKeys.js` (`CHAR_SKIN_KEYS` / `CHAR_OUTFIT_KEYS`).
+
+`charLayers.js` builds the registry from those keys by convention, and it lights
+up everywhere — the creator's outfit picker, randomised friends, presets.
+`charKeys.js` is a plain module (no Vite glob) so the data layer and Node data
+check can import it.
 
 ## Later: mix-and-match
 

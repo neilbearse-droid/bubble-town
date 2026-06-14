@@ -1,4 +1,5 @@
-import { EYES, HAIRC, HAIRSTYLES, NAMES, OUTFITC, OUTFITS, SKINS } from './items.js';
+import { NAMES } from './items.js';
+import { CHAR_SKIN_KEYS, CHAR_OUTFIT_KEYS } from './charKeys.js';
 import { rand, uid } from '../lib/utils.js';
 
 // containers are fixed scenery with hidden loot; x is world-%, they sit on the floor
@@ -130,10 +131,10 @@ function freshBuilding(id) {
 }
 function defaultState() {
   return {
-    v: 3, buildingsV: 3,
+    v: 4, buildingsV: 4,
     sound: true, night: false, event: null,
     chars: [
-      { id: uid(), name: 'Maya', skin: SKINS[2], hair: 'buns', hairColor: '#2D2A26', top: '#FF99C8', bottom: '#4D96FF', outfit: 'dress', eyes: '#3E92CC', acc: 'headphones', building: 'home', floor: 0, x: 62, y: 95 },
+      { id: uid(), name: 'Maya', skinKey: CHAR_SKIN_KEYS[0], outfitKey: CHAR_OUTFIT_KEYS[0], building: 'home', floor: 0, x: 62, y: 95 },
     ],
     backpack: {},
     plots: [null, null, null],
@@ -143,9 +144,7 @@ function defaultState() {
 
 function randomChar() {
   return {
-    name: rand(NAMES), skin: rand(SKINS), hair: rand(HAIRSTYLES), hairColor: rand(HAIRC),
-    top: rand(OUTFITC), bottom: rand(OUTFITC), outfit: rand(OUTFITS).id, eyes: rand(EYES),
-    acc: rand(['none', 'none', 'headphones', 'cap', 'beanie']),
+    name: rand(NAMES), skinKey: rand(CHAR_SKIN_KEYS), outfitKey: rand(CHAR_OUTFIT_KEYS),
     building: null, x: 50, y: 92,
   };
 }
