@@ -905,7 +905,7 @@ function Game() {
               const eatingThis = eating && eating.charId === c.id;
               const tubItem = (c.inTub && !isDrag) ? b.items.find((t) => t.id === c.inTub && ITEMS[t.key] && ITEMS[t.key].tub) : null;
               if (tubItem) {
-                const cs = 121, chestFrac = 0.56;
+                const cs = 121, chestFrac = 0.59;
                 const HcPct = (cs * CHAR_BASE_ASPECT) / vpH * 100;
                 const waterY = surfTopY(tubItem, vpH);
                 const cyTub = waterY + (1 - chestFrac) * HcPct;

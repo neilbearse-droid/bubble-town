@@ -14,8 +14,10 @@ import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_HAT_KEYS, CHAR_TOP_KEYS, CHAR_TOP_
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
 
-// height / width of the figure frame (widened so floppy hats/ears fit)
-export const CHAR_BASE_ASPECT = 1.418;
+// height / width of the figure frame. Tall headroom (875×1331) so high
+// ponytails, top hats, party hats etc. clear the top edge; the figure is
+// bottom-anchored in the game, so the extra space sits above the head only.
+export const CHAR_BASE_ASPECT = 1331 / 875;
 
 // Logical depth, back -> front. NOTE: CharSprite reorders the {bottom, top, shoes}
 // trio per the top's `oversized` flag and the bottom's `wide` flag, so flared

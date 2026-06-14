@@ -25,8 +25,10 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const CHARDIR = resolve(ROOT, 'src/assets/char');
 const KEYS_FILE = resolve(ROOT, 'src/data/charKeys.js');
 
-// shared frame: garments are cropped from the 1024x1536 render to this window
-const FRAME = { minX: 64, minY: 138, w: 875, h: 1241 };
+// shared frame: garments are cropped from the 1024x1536 render to this window.
+// Tall headroom (minY raised, bottom kept at 1379) so high ponytails / tall hats
+// clear the top edge; the figure is bottom-anchored in-game so feet don't move.
+const FRAME = { minX: 64, minY: 48, w: 875, h: 1331 };
 
 const CAT = {
   hair: { prefix: 'hair_', region: [0.0, 0.46], list: 'CHAR_HAIR_KEYS', seal: true, minBlob: 0.0012 },
