@@ -905,7 +905,7 @@ function Game() {
               const eatingThis = eating && eating.charId === c.id;
               const tubItem = (c.inTub && !isDrag) ? b.items.find((t) => t.id === c.inTub && ITEMS[t.key] && ITEMS[t.key].tub) : null;
               if (tubItem) {
-                const cs = 92, chestFrac = 0.56;
+                const cs = 121, chestFrac = 0.56;
                 const HcPct = (cs * CHAR_BASE_ASPECT) / vpH * 100;
                 const waterY = surfTopY(tubItem, vpH);
                 const cyTub = waterY + (1 - chestFrac) * HcPct;
@@ -938,7 +938,7 @@ function Game() {
                     </div>
                   )}
                   <div style={{ animation: isDrag ? 'none' : (waving ? 'ttwiggle .4s ease-in-out 3' : `ttbob 2.4s ease-in-out ${i * 0.35}s infinite alternate`), transform: isDrag ? 'scale(1.1) rotate(3deg)' : 'none', filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
-                    <CharSprite c={c} size={100} />
+                    <CharSprite c={c} size={132} />
                   </div>
                   {eatingThis && (
                     <span className="absolute" style={{ left: '50%', top: 64, transform: `translate(-50%,-50%) scale(${Math.max(0.18, 1 - eating.step * 0.24)})`, fontSize: 36, zIndex: 7, pointerEvents: 'none', transition: 'transform .15s ease' }}>{IMG[eating.key] ? <img src={IMG[eating.key]} style={{ width: 46, height: 'auto', display: 'block' }} /> : ITEMS[eating.key].e}</span>
@@ -1061,7 +1061,7 @@ function Game() {
       {drag && ghost && (drag.kind === 'new-item' || drag.kind === 'new-rare' || drag.kind === 'place-char') && (
         <div className="fixed pointer-events-none" style={{ left: ghost.x, top: ghost.y, transform: 'translate(-50%,-70%)', zIndex: 2200 }}>
           {drag.kind === 'place-char'
-            ? (() => { const ch = st.chars.find((c) => c.id === drag.id); return ch ? <CharSprite c={ch} size={66} style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }} /> : null; })()
+            ? (() => { const ch = st.chars.find((c) => c.id === drag.id); return ch ? <CharSprite c={ch} size={87} style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }} /> : null; })()
             : (() => { const def = ITEMS[drag.key]; const Fc = def.svg ? FURN[def.svg] : null; return IMG[drag.key] ? <img src={IMG[drag.key]} style={{ width: def.s * 0.7, height: 'auto', display: 'block', filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }} /> : Fc ? <div style={{ filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }}><Fc size={def.s * 0.7} /></div> : <span style={{ fontSize: 52, filter: 'drop-shadow(0 5px 5px rgba(0,0,0,.25))' }}>{def.e}</span>; })()}
         </div>
       )}
@@ -1136,7 +1136,7 @@ function Game() {
                       <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'place-char', id: c.id })}
                         className="shrink-0 w-20 rounded-2xl flex flex-col items-center justify-end pb-1 relative active:scale-95"
                         style={{ background: c.building ? 'rgba(111,231,183,0.16)' : 'rgba(255,255,255,0.06)', height: 96, touchAction: 'pan-x', cursor: 'grab', overflow: 'hidden' }}>
-                        <CharSprite c={c} size={42} />
+                        <CharSprite c={c} size={55} />
                         <span className="text-[10px] font-bold truncate w-full text-center px-1" style={{ color: '#ECE7FA' }}>{c.name}</span>
                         {c.building && <span className="absolute top-1 right-1 text-[10px]">{BUILDINGS[c.building].e}</span>}
                       </div>
@@ -1148,7 +1148,7 @@ function Game() {
                       <div className="flex gap-2 overflow-x-auto no-sb pb-3">
                         {EVENTS[st.event].chars.map((pc, idx) => (
                           <button key={idx} onClick={() => addPreset(pc)} className="shrink-0 w-20 rounded-2xl flex flex-col items-center justify-end pb-1 active:scale-95" style={{ background: 'rgba(255,111,181,0.14)', border: `2px solid ${EVENTS[st.event].accent}`, height: 96, overflow: 'hidden' }}>
-                            <CharSprite c={pc} size={42} />
+                            <CharSprite c={pc} size={55} />
                             <span className="text-[10px] font-bold truncate w-full text-center px-1" style={{ color: '#ECE7FA' }}>{pc.name}</span>
                           </button>
                         ))}
@@ -1208,7 +1208,7 @@ function Game() {
             </div>
             <div className="flex items-center gap-3 mt-2">
               <div className="rounded-2xl grid place-items-center shrink-0" style={{ background: 'rgba(162,75,255,0.24)', width: 128, height: 176, overflow: 'hidden' }}>
-                <CharSprite c={creator} size={88} />
+                <CharSprite c={creator} size={116} />
               </div>
               <div className="flex-1 min-w-0">
                 <input value={creator.name} onChange={(e) => setCreator({ ...creator, name: e.target.value })} maxLength={14} placeholder="Name"

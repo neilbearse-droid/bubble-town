@@ -14,8 +14,8 @@ import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_BOTTOM_KEYS, CHAR_S
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
 
-// height / width of the trimmed figure frame
-export const CHAR_BASE_ASPECT = 1.866;
+// height / width of the figure frame (widened so floppy hats/ears fit)
+export const CHAR_BASE_ASPECT = 1.418;
 
 // Depth stack, back -> front. Each layer is one full-canvas image; a missing
 // (None) slot is skipped, so you can go bald / shirtless / barefoot.
