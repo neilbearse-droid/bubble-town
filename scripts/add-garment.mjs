@@ -136,10 +136,30 @@ if (flags.has('--fit')) {
 
 for (let i = 0; i < N; i++) out[i * 4 + 3] = al[i] ? 255 : 0;
 
+// raise a low-rise waistband up to the natural waist so tops always overlap the
+// bottom (the render pipeline tends to sit pants/shorts low on the hips, which
+// leaves a bare-midriff gap under shorter tops). Extends the topmost waistband
+// pixels straight up, clipped to the central torso of the base silhouette.
+async function raiseWaist(buf) {
+  const fw = FRAME.w, fh = FRAME.h;
+  const body = await sharp(resolve(CHARDIR, 'base_tan.webp')).ensureAlpha().raw().toBuffer();
+  const xLo = Math.round(fw * 0.25), xHi = Math.round(fw * 0.75), yT = Math.round(fh * 0.522);
+  let yC = fh;
+  for (let y = 0; y < fh; y++) { let n = 0; for (let x = 0; x < fw; x++) if (buf[(y * fw + x) * 4 + 3] > 40) n++; if (n > 15) { yC = y; break; } }
+  if (yC <= yT) return buf;
+  for (let y = yT; y < yC; y++) for (let x = xLo; x < xHi; x++) {
+    const i = (y * fw + x) * 4; if (body[i + 3] < 40) continue;
+    for (let dy = 0; dy < 150; dy++) { const j = ((y + dy) * fw + x) * 4; if (buf[j + 3] > 40) { buf[i] = buf[j]; buf[i + 1] = buf[j + 1]; buf[i + 2] = buf[j + 2]; buf[i + 3] = 255; break; } }
+  }
+  return buf;
+}
+
 // crop to the shared frame + write
 const outFile = resolve(CHARDIR, cfg.prefix + key + '.webp');
 const png = await sharp(out, { raw: { width: W, height: H, channels: 4 } }).png().toBuffer();
-await sharp(png).extract({ left: FRAME.minX, top: FRAME.minY, width: FRAME.w, height: FRAME.h }).webp({ alphaQuality: 100 }).toFile(outFile);
+let cropped = await sharp(png).extract({ left: FRAME.minX, top: FRAME.minY, width: FRAME.w, height: FRAME.h }).ensureAlpha().raw().toBuffer();
+if (category === 'bottom') cropped = await raiseWaist(cropped);
+await sharp(cropped, { raw: { width: FRAME.w, height: FRAME.h, channels: 4 } }).webp({ alphaQuality: 100 }).toFile(outFile);
 console.log('wrote', outFile.replace(ROOT + '/', ''));
 
 // optional preview composite
