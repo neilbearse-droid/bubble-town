@@ -41,10 +41,11 @@ export const CHAR_LAYERS = {
   bottom: {},
   shoes: {},
   top: {
-    // Open puffer worn over the torso: a single front piece (body shows through
-    // the open front, no back panel needed).
+    // Open puffer: the lining/cavity sits behind the body so the torso shows
+    // through the open front, while the puffy panels + sleeves wrap in front.
     puffer_lavender: {
-      front: { url: u('top_puffer'), w: 1.021, cx: 0.502, cy: 0.571 },
+      back: { url: u('top_puffer_back'), w: 1.021, cx: 0.502, cy: 0.571 },
+      front: { url: u('top_puffer_front'), w: 1.021, cx: 0.502, cy: 0.571 },
     },
   },
   hair: {
