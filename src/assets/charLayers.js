@@ -9,7 +9,7 @@
 // base shows through automatically = correct occlusion for free. Every layer is
 // a full-canvas, pre-aligned cutout: no per-piece geometry, no slot fitting.
 // Layers just paint at inset 0 in CHAR_Z order, so garments mix & match freely.
-import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_BOTTOM_KEYS, CHAR_BOTTOM_WIDE, CHAR_SHOE_KEYS } from '../data/charKeys.js';
+import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_TOP_OVERSIZED, CHAR_BOTTOM_KEYS, CHAR_BOTTOM_WIDE, CHAR_SHOE_KEYS } from '../data/charKeys.js';
 
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
@@ -17,18 +17,18 @@ const u = (name) => urls['./char/' + name + '.webp'];
 // height / width of the figure frame (widened so floppy hats/ears fit)
 export const CHAR_BASE_ASPECT = 1.418;
 
-// Depth stack, back -> front. Each layer is one full-canvas image; a missing
-// (None) slot is skipped, so you can go bald / shirtless / barefoot. The base's
-// feet are their own layer so they can be HIDDEN when shoes are worn — otherwise
-// a bare foot peeks around a shoe that doesn't perfectly align.
+// Logical depth, back -> front. NOTE: CharSprite reorders the {bottom, top, shoes}
+// trio per the top's `oversized` flag and the bottom's `wide` flag, so flared
+// pants drape over shoes, tight pants tuck under them, oversized shirts hang over
+// the pants, and fitted shirts tuck in. base / feet / hair are fixed; the `feet`
+// layer is skipped whenever shoes are worn (no bare foot peeking around a shoe).
 export const CHAR_Z = [
-  { base: 'body' }, // the skin: bald figure with face, in underwear (legs end at the ankle)
-  { base: 'feet' }, // bare feet — skipped by CharSprite when shoes are on
-  { bottom: 'full' }, // tight pants render here (UNDER the shoe — shoe over the cuff)
-  { top: 'full' }, // shirt/jacket over the torso (hem over the waistband)
-  { shoes: 'full' }, // over the trouser cuffs (covers the foot region)
-  { bottom: 'over' }, // WIDE/flared pants render here instead (draped OVER the shoe)
-  { hair: 'full' }, // over the head
+  { base: 'body' },
+  { base: 'feet' },
+  { bottom: 'full' },
+  { top: 'full' },
+  { shoes: 'full' },
+  { hair: 'full' },
 ];
 
 // Built from the canonical key lists by naming convention: base_<skin>.webp (+
@@ -39,7 +39,7 @@ const cat = (keys, prefix) => Object.fromEntries(keys.map((k) => [k, { full: { u
 export const CHAR_LAYERS = {
   base: Object.fromEntries(CHAR_SKIN_KEYS.map((k) => [k, { body: { url: u('base_' + k) }, feet: { url: u('base_' + k + '_feet') } }])),
   hair: cat(CHAR_HAIR_KEYS, 'hair_'),
-  top: cat(CHAR_TOP_KEYS, 'top_'),
+  top: Object.fromEntries(CHAR_TOP_KEYS.map((k) => [k, { full: { url: u('top_' + k) }, oversized: CHAR_TOP_OVERSIZED.includes(k) }])),
   bottom: Object.fromEntries(CHAR_BOTTOM_KEYS.map((k) => [k, { full: { url: u('bottom_' + k) }, wide: CHAR_BOTTOM_WIDE.includes(k) }])),
   shoes: cat(CHAR_SHOE_KEYS, 'shoes_'),
 };

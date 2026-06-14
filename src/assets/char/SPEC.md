@@ -110,12 +110,15 @@ up everywhere — the creator's per-slot pickers, randomised friends, presets.
 check can import it. Depth order is `CHAR_Z` (base → bottom → top → shoes → hair);
 a missing/None slot is simply skipped, so a friend can be bald/shirtless/barefoot.
 
-Two extra layering rules make footwear look right:
+Extra layering rules make the overlaps look right:
 - **Bare feet hide under shoes.** The base is split into `body` (legs to the
   ankle) + `feet`; the `feet` layer is skipped whenever a shoe is worn, so no
   bare foot peeks around a shoe that doesn't perfectly align.
-- **Wide pants drape over shoes; tight pants tuck under.** A bottom listed in
-  `CHAR_BOTTOM_WIDE` (flares, etc.) renders *over* the shoe (boot-cut look);
-  everything else renders *under* it (shoe sits on the cuff, like skinny jeans in
-  high-tops). CHAR_Z has two bottom slots (`full` under, `over` above) and
-  CharSprite draws the pant in whichever matches its `wide` flag.
+- **The {bottom, top, shoes} trio is ordered per character** from two flags, so
+  CharSprite picks one of four back→front orders:
+  - `top.oversized` (in `CHAR_TOP_OVERSIZED`) → shirt hangs **over** the pants;
+    otherwise the shirt is fitted and **tucks under** (pant waistband over the hem).
+  - `bottom.wide` (in `CHAR_BOTTOM_WIDE`) → flared pants drape **over** the shoe
+    (boot-cut); otherwise the shoe sits **over** the cuff (skinny-jeans-in-sneakers).
+  Waist (top↔bottom) and ankle (bottom↔shoe) form a chain, so a single linear
+  order always exists — no conflicts.
