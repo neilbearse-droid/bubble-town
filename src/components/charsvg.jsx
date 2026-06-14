@@ -93,7 +93,7 @@ const HAIR_FRONT = {
   ),
 };
 
-function CharSVG({ c, size = 120, style, pose, mouth }) {
+function CharSVG({ c, size = 120, style, pose, mouth, mood }) {
   const sk = c.skin, skD = shade(c.skin, -16);
   const hc = c.hairColor, hcD = shade(c.hairColor, -16), hcL = shade(c.hairColor, 24);
   const brow = shade(c.hairColor, -34);
@@ -195,17 +195,26 @@ function CharSVG({ c, size = 120, style, pose, mouth }) {
       <ellipse cx="80" cy="60" rx="47" ry="45" fill={sk} stroke={OL} strokeWidth={sw} />
       <circle cx="33" cy="64" r="9" fill={sk} stroke={OL} strokeWidth={sw} />
       <circle cx="127" cy="64" r="9" fill={sk} stroke={OL} strokeWidth={sw} />
-      {/* glossy eyes */}
-      <ellipse cx="60" cy="63" rx="14.5" ry="17" fill="#FFFFFF" stroke={OL} strokeWidth="2.2" />
-      <ellipse cx="100" cy="63" rx="14.5" ry="17" fill="#FFFFFF" stroke={OL} strokeWidth="2.2" />
-      <circle cx="61" cy="66" r="9" fill={eye} />
-      <circle cx="99" cy="66" r="9" fill={eye} />
-      <circle cx="61" cy="67" r="4.6" fill="#160F2A" />
-      <circle cx="99" cy="67" r="4.6" fill="#160F2A" />
-      <circle cx="57.4" cy="61" r="3.4" fill="#FFFFFF" />
-      <circle cx="95.4" cy="61" r="3.4" fill="#FFFFFF" />
-      <circle cx="64" cy="69.5" r="1.7" fill="#FFFFFF" opacity=".9" />
-      <circle cx="102" cy="69.5" r="1.7" fill="#FFFFFF" opacity=".9" />
+      {/* eyes — relaxed shows soft closed happy arcs */}
+      {mood === 'relaxed' ? (
+        <g fill="none" stroke={OL} strokeWidth="4" strokeLinecap="round">
+          <path d="M49 65 Q60 74 71 65" />
+          <path d="M89 65 Q100 74 111 65" />
+        </g>
+      ) : (
+        <g>
+          <ellipse cx="60" cy="63" rx="14.5" ry="17" fill="#FFFFFF" stroke={OL} strokeWidth="2.2" />
+          <ellipse cx="100" cy="63" rx="14.5" ry="17" fill="#FFFFFF" stroke={OL} strokeWidth="2.2" />
+          <circle cx="61" cy="66" r="9" fill={eye} />
+          <circle cx="99" cy="66" r="9" fill={eye} />
+          <circle cx="61" cy="67" r="4.6" fill="#160F2A" />
+          <circle cx="99" cy="67" r="4.6" fill="#160F2A" />
+          <circle cx="57.4" cy="61" r="3.4" fill="#FFFFFF" />
+          <circle cx="95.4" cy="61" r="3.4" fill="#FFFFFF" />
+          <circle cx="64" cy="69.5" r="1.7" fill="#FFFFFF" opacity=".9" />
+          <circle cx="102" cy="69.5" r="1.7" fill="#FFFFFF" opacity=".9" />
+        </g>
+      )}
       {/* brows */}
       <path d="M47 42 q12 -7 24 -3" stroke={brow} strokeWidth="4.5" strokeLinecap="round" fill="none" />
       <path d="M89 39 q12 -4 24 3" stroke={brow} strokeWidth="4.5" strokeLinecap="round" fill="none" />

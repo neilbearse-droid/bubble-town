@@ -33,6 +33,7 @@ const ITEMS = {
   doll: { e: '🪆', s: 48, zone: 'floor', c: 'bedbath' },
   basket: { e: '🧺', s: 56, zone: 'floor', c: 'bedbath' },
   bath: { e: '🛁', s: 120, zone: 'floor', c: 'bedbath' },
+  hottub: { n: 'Hot Tub', s: 230, r: 0.712, zone: 'floor', c: 'bedbath', tub: true, surf: { top: 0.55, half: 0.34 } },
   toilet: { e: '🚽', s: 80, zone: 'floor', c: 'bedbath' },
   soap: { e: '🧼', s: 38, zone: 'floor', c: 'bedbath' },
   table: { n: 'Table', s: 160, r: 0.7, zone: 'floor', c: 'kitchen', svg: 'Table', surf: { top: 0.72, half: 0.40 } },
