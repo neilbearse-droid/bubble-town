@@ -3,19 +3,36 @@
 // and the base reference). The compositor (CharSprite) stacks them with the
 // per-layer geometry below.
 //
-// Geometry is normalised to the trimmed BASE-BODY frame:
-//   w  = layer width as a fraction of the base width
+// A wearable is NOT a single flat overlay: it can carry a `back` piece and a
+// `front` piece so the body is painted *between* them. That's what lets a hair
+// put its length behind the head while the bangs sit in front of the forehead,
+// or a jacket tuck the torso inside it. Pieces with no body in front of them
+// (e.g. an open jacket worn over the torso) can supply just `front`.
+//
+// Geometry per piece is normalised to the trimmed BASE-BODY frame:
+//   w  = piece width as a fraction of the base width
 //   cx = horizontal centre (0..1 across base width)
 //   cy = vertical centre  (0..1 down base height)
-// so layers stay aligned at any render size.
+// so pieces stay aligned at any render size. Generate back/front pieces from a
+// single illustration with scripts/split-layer-parts.mjs.
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
 
 // height / width of the trimmed base body (keeps the frame the right shape)
 export const CHAR_BASE_ASPECT = 1.757;
 
-// paint order, back -> front
-export const CHAR_Z = ['base', 'bottom', 'shoes', 'top', 'hair', 'acc'];
+// Paint order, back -> front. The body (`base`) is painted in the middle so
+// `back` pieces fall behind it and `front` pieces in front of it.
+export const CHAR_Z = [
+  { cat: 'hair', part: 'back' },
+  { cat: 'top', part: 'back' },
+  { cat: 'base' },
+  { cat: 'bottom', part: 'front' },
+  { cat: 'shoes', part: 'front' },
+  { cat: 'top', part: 'front' },
+  { cat: 'acc', part: 'front' },
+  { cat: 'hair', part: 'front' },
+];
 
 export const CHAR_LAYERS = {
   base: {
@@ -24,10 +41,19 @@ export const CHAR_LAYERS = {
   bottom: {},
   shoes: {},
   top: {
-    puffer_lavender: { url: u('top_puffer'), w: 1.021, cx: 0.502, cy: 0.571 },
+    // Open puffer worn over the torso: a single front piece (body shows through
+    // the open front, no back panel needed).
+    puffer_lavender: {
+      front: { url: u('top_puffer'), w: 1.021, cx: 0.502, cy: 0.571 },
+    },
   },
   hair: {
-    bob_blue: { url: u('hair_bob'), w: 0.881, cx: 0.502, cy: 0.104 },
+    // Bob: full silhouette behind the head + a bangs crop in front of the
+    // forehead, so the face sits inside the hair.
+    bob_blue: {
+      back: { url: u('hair_bob_back'), w: 0.881, cx: 0.502, cy: 0.104 },
+      front: { url: u('hair_bob_front'), w: 0.881, cx: 0.502, cy: 0.013 },
+    },
   },
   acc: {},
 };

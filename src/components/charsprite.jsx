@@ -3,22 +3,28 @@ import { CHAR_LAYERS, CHAR_BASE_ASPECT, CHAR_Z, CHAR_KEYS } from '../assets/char
 
 // Layered illustrated paper-doll. `c` maps each category to a layer key:
 //   { skinKey, bottomKey, shoesKey, topKey, hairKey, accKey }
-// Layers stack back-to-front (CHAR_Z); each overlay is centred + scaled by its
-// normalised geometry so it stays registered to the base at any size.
+// Pieces stack back-to-front (CHAR_Z) with the body painted in the middle, so a
+// wearable's `back` piece falls behind the body and its `front` piece in front
+// of it (e.g. hair length behind the head, bangs over the forehead). Each piece
+// is centred + scaled by its normalised geometry so it stays registered to the
+// base at any size.
 function CharSprite({ c = {}, size = 132, style }) {
   const base = CHAR_LAYERS.base[c.skinKey] || Object.values(CHAR_LAYERS.base)[0];
   const keyFor = { bottom: c.bottomKey, shoes: c.shoesKey, top: c.topKey, hair: c.hairKey, acc: c.accKey };
   return (
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>
-      {base && (
-        <img src={base.url} draggable="false" alt=""
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
-      )}
-      {CHAR_Z.filter((z) => z !== 'base').map((cat) => {
-        const L = CHAR_LAYERS[cat] && CHAR_LAYERS[cat][keyFor[cat]];
+      {CHAR_Z.map((slot) => {
+        if (slot.cat === 'base') {
+          return base && (
+            <img key="base" src={base.url} draggable="false" alt=""
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
+          );
+        }
+        const wearable = CHAR_LAYERS[slot.cat] && CHAR_LAYERS[slot.cat][keyFor[slot.cat]];
+        const L = wearable && wearable[slot.part];
         if (!L) return null;
         return (
-          <img key={cat} src={L.url} draggable="false" alt=""
+          <img key={`${slot.cat}.${slot.part}`} src={L.url} draggable="false" alt=""
             style={{
               position: 'absolute', left: `${L.cx * 100}%`, top: `${L.cy * 100}%`,
               width: `${L.w * 100}%`, transform: 'translate(-50%,-50%)',
