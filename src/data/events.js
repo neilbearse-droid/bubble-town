@@ -5,7 +5,7 @@ const EVENTS = {
     blurb: 'Mics, a disco ball & sparkly pop stars!',
     chars: [
       { name: 'Star', skinKey: 'tan', hairKey: 'bob', topKey: 'tank', bottomKey: 'flares', shoesKey: 'canvas' },
-      { name: 'Vinyl', skinKey: 'tan', hairKey: 'mohawk', topKey: 'jacket', bottomKey: 'ripped', shoesKey: 'black' },
+      { name: 'Vinyl', skinKey: 'tan', hairKey: 'tousle', topKey: 'tank', bottomKey: 'flares', shoesKey: 'white' },
       { name: 'Glitter', skinKey: 'tan', hairKey: 'tousle', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'white' },
     ],
   },
@@ -16,7 +16,7 @@ const EVENTS = {
     chars: [
       { name: 'Coral', skinKey: 'tan', hairKey: 'bob', topKey: 'tank', bottomKey: 'flares', shoesKey: 'white' },
       { name: 'Pearl', skinKey: 'tan', hairKey: 'tousle', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'canvas' },
-      { name: 'Finn', skinKey: 'tan', hairKey: 'mohawk', topKey: 'jacket', bottomKey: 'ripped', shoesKey: 'black' },
+      { name: 'Finn', skinKey: 'tan', hairKey: 'bob', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'canvas' },
     ],
   },
   space: {
@@ -25,7 +25,7 @@ const EVENTS = {
     blurb: 'Rockets, planets & astronaut pals!',
     chars: [
       { name: 'Nova', skinKey: 'tan', hairKey: 'tousle', topKey: 'tank', bottomKey: 'flares', shoesKey: 'canvas' },
-      { name: 'Comet', skinKey: 'tan', hairKey: 'mohawk', topKey: 'jacket', bottomKey: 'ripped', shoesKey: 'black' },
+      { name: 'Comet', skinKey: 'tan', hairKey: 'tousle', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'canvas' },
       { name: 'Astra', skinKey: 'tan', hairKey: 'bob', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'white' },
     ],
   },
