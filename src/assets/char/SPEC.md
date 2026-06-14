@@ -76,9 +76,33 @@ Same render style as the reference. Full body, identical crop, magenta backgroun
 > background pokes through the tufts (auto-sealed in integration, but fuller art
 > is cleaner).
 
-## Integration (what the maintainer runs on a new render)
+## Integration (one command)
 
-1. **Key** the magenta: a pixel is background/skin if `R>110 && B>90 && G <
+Drop a render in and run:
+
+```
+node scripts/add-garment.mjs <image> <hair|top|bottom|shoes> <key> [flags]
+  --wide        bottom drapes OVER shoes (boot-cut)        --oversized  top hangs over pants
+  --fit         grow a too-narrow tight pant to the body   --region y0:y1   override keep-band
+  --preview p.png
+```
+
+It does the whole pipeline below (key → clean → crop → register) and updates
+`src/data/charKeys.js`. Works for magenta **or** green screens, and respects
+renders exported with the background already transparent. Review the `--preview`,
+then commit. Example: `node scripts/add-garment.mjs in/cargo.png bottom cargo --wide --preview /tmp/p.png`.
+
+### What the script does (for reference)
+
+1. **Key** the screen: a pixel is dropped if it's already transparent, OR magenta
+   (`R>110 && B>90 && G < min(R,B)*0.72`), OR green (`G dominant`). Else it's kept.
+2. **De-spill** (hue-safe): `m = min(R,B); if (m > G) { R -= m-G; B -= m-G }` —
+   removes the screen fringe without shifting warm colors.
+3. **Drop specks:** connected-component the alpha, discard islands `< ~0.3%` of
+   the frame (kills stray dark outline bits from hands/feet).
+4. **Seal hair gaps:** in the head region, fill transparent pixels that are
+   mostly surrounded by opaque hair with the local hair color.
+5. Crop to the shared `875 × 1241` frame, export `webp` (`alphaQuality: 100`).
    min(R,B)*0.72`. Everything else is kept. **Also respect any existing alpha** —
    some renders export with the background *already transparent* (alpha 0); drop
    those pixels too, or the empty background gets painted opaque (a black blob).
