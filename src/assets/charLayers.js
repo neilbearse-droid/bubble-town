@@ -18,8 +18,8 @@
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
 
-// height / width of the trimmed base body (keeps the frame the right shape)
-export const CHAR_BASE_ASPECT = 1.757;
+// height / width of the base body (keeps the frame the right shape)
+export const CHAR_BASE_ASPECT = 1.699;
 
 // ---------------------------------------------------------------------------
 // THE RIG — authoritative depth stack, back -> front. Single source of truth;
@@ -63,30 +63,23 @@ export const CHAR_Z = [
 // and still carry { w, cx, cy }; they'll be replaced part-by-part per SPEC.md.
 export const CHAR_LAYERS = {
   base: {
-    // A skin is a set of depth-ordered, full-frame body parts keyed by the slot
-    // names in CHAR_Z. Bootstrap art is one full-figure `torso` cutout plus a
-    // combined `hand_l` (the placeholder image already holds both hands).
+    // A skin is a set of depth-ordered, full-canvas body parts keyed by the slot
+    // names in CHAR_Z. The first purpose-drawn skin: one connected `torso` body
+    // (rendered whole, no seams) plus `hand_l`/`hand_r` cutouts lifted from it so
+    // they ride in front of sleeves. Other base slots are covered by `torso`
+    // until split out for a garment that needs to wrap between them.
     tan: {
       torso: { url: u('base_tan') },
-      hand_l: { url: u('base_tan_hands') },
+      hand_l: { url: u('base_tan_hand_l') },
+      hand_r: { url: u('base_tan_hand_r') },
     },
   },
+  // Garments are being re-drawn to the purpose-drawn base (see SPEC.md). The old
+  // placeholder hair/jacket were tuned to the previous proportions and retired.
   bottom: {},
   shoes: {},
-  top: {
-    // Open puffer: lining behind the torso, panels + sleeves in front.
-    puffer_lavender: {
-      torso_back: { url: u('top_puffer_back'), w: 1.021, cx: 0.502, cy: 0.571 },
-      torso_front: { url: u('top_puffer_front'), w: 1.021, cx: 0.502, cy: 0.571 },
-    },
-  },
-  hair: {
-    // Bob: full silhouette behind the head + a bangs crop over the forehead.
-    bob_blue: {
-      back: { url: u('hair_bob_back'), w: 0.881, cx: 0.502, cy: 0.104 },
-      front: { url: u('hair_bob_front'), w: 0.881, cx: 0.502, cy: 0.013 },
-    },
-  },
+  top: {},
+  hair: {},
   acc: {},
 };
 
