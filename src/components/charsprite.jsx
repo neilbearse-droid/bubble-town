@@ -40,6 +40,8 @@ const startLook = () => ({
   skinKey: CHAR_KEYS.base[0],
   hairKey: CHAR_KEYS.hair[0] || null,
   topKey: CHAR_KEYS.top[0] || null,
+  bottomKey: CHAR_KEYS.bottom[0] || null,
+  shoesKey: CHAR_KEYS.shoes[0] || null,
 });
 
 function CharSpriteDemo({ onClose }) {
@@ -68,7 +70,9 @@ function CharSpriteDemo({ onClose }) {
           <CharSprite c={look} size={150} />
         </div>
         <Row label="Hair" cat="hair" field="hairKey" />
-        <Row label="Outfit" cat="top" field="topKey" />
+        <Row label="Top" cat="top" field="topKey" />
+        <Row label="Bottom" cat="bottom" field="bottomKey" />
+        <Row label="Shoes" cat="shoes" field="shoesKey" />
         <p className="text-xs mt-4 leading-relaxed" style={{ color: '#9D95C0' }}>
           Early preview of the layered illustrated dress-up. More hairstyles, outfits, bottoms & accessories are on the way ✨
         </p>

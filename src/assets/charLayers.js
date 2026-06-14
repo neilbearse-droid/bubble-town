@@ -74,11 +74,21 @@ export const CHAR_LAYERS = {
       hand_r: { url: u('base_tan_hand_r') },
     },
   },
-  // Garments are being re-drawn to the purpose-drawn base (see SPEC.md). The old
-  // placeholder hair/jacket were tuned to the previous proportions and retired.
-  bottom: {},
-  shoes: {},
-  top: {},
+  // Garments are drawn full-canvas (no geometry) and baked into their slot
+  // position over the base, so they drop straight onto the rig (see SPEC.md).
+  bottom: {
+    jeans: {
+      thigh_l: { url: u('bottom_jeans_thigh_l') }, thigh_r: { url: u('bottom_jeans_thigh_r') },
+      shin_l: { url: u('bottom_jeans_shin_l') }, shin_r: { url: u('bottom_jeans_shin_r') },
+    },
+  },
+  shoes: {
+    sneaker: { l: { url: u('shoes_sneaker_l') }, r: { url: u('shoes_sneaker_r') } },
+  },
+  top: {
+    // Short-sleeve tee (sleeves drawn into the torso panel).
+    tee_navy: { torso_front: { url: u('top_tee_navy_torso_front') } },
+  },
   hair: {},
   acc: {},
 };
