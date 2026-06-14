@@ -50,10 +50,12 @@ const region = (opt('--region') ? opt('--region').split(':').map(Number) : cfg.r
 // ---- key + clean ----------------------------------------------------------
 // A pixel is screen (drop it) if it's already transparent, OR magenta
 // (R>110,B>90,G<min(R,B)*.72), OR green (#00FF00-ish: G dominant). Everything
-// else is the garment.
+// else is the garment. Saturated VIOLET/PURPLE (leans blue, real green channel)
+// is protected — it reads as magenta to the ratio test but is a real garment
+// colour (e.g. purple skates), so we keep it.
 const isScreen = (r, g, b, a) =>
   a < 40 ||
-  (r > 110 && b > 90 && g < Math.min(r, b) * 0.72) || // magenta
+  ((r > 110 && b > 90 && g < Math.min(r, b) * 0.72) && !(g >= 30 && b > r * 1.15)) || // magenta (but keep violet)
   (g > 110 && g - r > 40 && g - b > 40); // green
 
 const { data, info } = await sharp(img).ensureAlpha().raw().toBuffer({ resolveWithObject: true });

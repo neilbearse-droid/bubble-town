@@ -20,7 +20,7 @@ export const CHAR_BOTTOM_KEYS = ['flares', 'sparkle', 'boho', 'plaid', 'shorts',
 // "tight" and the shoe sits on top of the cuff (skinny-jeans-into-sneakers).
 // Shorts don't reach the shoe, so they're moot.
 export const CHAR_BOTTOM_WIDE = ['flares', 'sparkle', 'boho', 'plaid', 'stars'];
-export const CHAR_SHOE_KEYS = ['white', 'hightop', 'green', 'boots', 'blue', 'jordan', 'crocs'];
+export const CHAR_SHOE_KEYS = ['white', 'hightop', 'green', 'boots', 'blue', 'jordan', 'crocs', 'loafers', 'slippers', 'clogs', 'pinkboots', 'skates', 'redsneaks', 'whitehigh', 'rainboots'];
 // OPEN-BACK shoes (Crocs, sandals, slides) show the bare foot through them, so
 // the feet layer is NOT hidden for these (closed shoes enclose the foot fully).
-export const CHAR_SHOE_OPEN = ['crocs'];
+export const CHAR_SHOE_OPEN = ['crocs', 'clogs'];
