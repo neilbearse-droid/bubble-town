@@ -136,8 +136,10 @@ a missing/None slot is simply skipped, so a friend can be bald/shirtless/barefoo
 
 Extra layering rules make the overlaps look right:
 - **Bare feet hide under shoes.** The base is split into `body` (legs to the
-  ankle) + `feet`; the `feet` layer is skipped whenever a shoe is worn, so no
-  bare foot peeks around a shoe that doesn't perfectly align.
+  ankle) + `feet` (+ `ankle`, the foot with the toes removed). Barefoot shows
+  `feet`; a **closed** shoe shows neither (it encloses the foot, so nothing peeks);
+  an **open-back** shoe (`CHAR_SHOE_OPEN`: Crocs/sandals) shows `ankle`, so leg
+  fills behind the opening instead of a bare foot or a gap.
 - **The {bottom, top, shoes} trio is ordered per character** from two flags, so
   CharSprite picks one of four back→front orders:
   - `top.oversized` (in `CHAR_TOP_OVERSIZED`) → shirt hangs **over** the pants;

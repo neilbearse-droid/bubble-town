@@ -37,7 +37,7 @@ export const CHAR_Z = [
 // lights up everywhere.
 const cat = (keys, prefix) => Object.fromEntries(keys.map((k) => [k, { full: { url: u(prefix + k) } }]));
 export const CHAR_LAYERS = {
-  base: Object.fromEntries(CHAR_SKIN_KEYS.map((k) => [k, { body: { url: u('base_' + k) }, feet: { url: u('base_' + k + '_feet') } }])),
+  base: Object.fromEntries(CHAR_SKIN_KEYS.map((k) => [k, { body: { url: u('base_' + k) }, feet: { url: u('base_' + k + '_feet') }, ankle: { url: u('base_' + k + '_ankle') } }])),
   hair: cat(CHAR_HAIR_KEYS, 'hair_'),
   top: Object.fromEntries(CHAR_TOP_KEYS.map((k) => [k, { full: { url: u('top_' + k) }, oversized: CHAR_TOP_OVERSIZED.includes(k) }])),
   bottom: Object.fromEntries(CHAR_BOTTOM_KEYS.map((k) => [k, { full: { url: u('bottom_' + k) }, wide: CHAR_BOTTOM_WIDE.includes(k) }])),
