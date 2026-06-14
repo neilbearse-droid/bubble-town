@@ -175,6 +175,21 @@ function Game() {
     }
     return best;
   };
+  // Is the drop point over a hot tub? (used to seat a character in the water)
+  const tubAt = (x, y) => {
+    if (!vpRef.current || !stRef.current) return null;
+    const r = vpRef.current.getBoundingClientRect();
+    const sceneW = r.width * nRooms();
+    const arr = (stRef.current.buildings[bid].floors[floorRef.current] || {}).items || [];
+    for (let k = arr.length - 1; k >= 0; k--) {
+      const it = arr[k]; const d = ITEMS[it.key];
+      if (!d || !d.tub) continue;
+      const halfW = (d.surf.half * d.s) / sceneW * 100;
+      const top = surfTopY(it, r.height);
+      if (Math.abs(x - it.x) <= halfW && y >= top - 16 && y <= it.y + 2) return { id: it.id, x: it.x, baseY: it.y };
+    }
+    return null;
+  };
   const addItemOn = (key, surf) => {
     upd((c) => { c.buildings[bid].floors[floorRef.current].items.push({ id: uid(), key, x: surf.x, y: surf.y, flip: false, on: surf.id, ox: surf.x - surf.sx, by: surf.baseY }); });
     sfx('pop');
@@ -197,6 +212,9 @@ function Game() {
       if (it && ITEMS[it.key] && ITEMS[it.key].surf) { // things resting on it fall to the floor
         for (const ch of arr) if (ch.on === id) { ch.on = null; ch.by = null; ch.y = zoneClamp(ch.key, 999); }
       }
+      if (it && ITEMS[it.key] && ITEMS[it.key].tub) { // friends climb out when the tub goes
+        for (const ch of c.chars) if (ch.inTub === id) { delete ch.inTub; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
+      }
       fs.items = arr.filter((t) => t.id !== id);
     });
     setSel(null);
@@ -206,10 +224,26 @@ function Game() {
   // Tap an interactive item (lamp, TV, arcade…) to toggle its on/off state.
   const toggleLit = (id) => { let on = false; upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === id); if (it) { it.lit = !it.lit; on = it.lit; } }); sfx(on ? 'pip' : 'pop'); };
   const placeChar = (id, x, y) => {
+    const tub = tubAt(x, y);
     const ly = clamp(y, CHAR_BAND[0], CHAR_BAND[1]);
-    upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current; ch.x = x; ch.y = ly; } });
-    puffAt(x, ly);
-    sfx('pop');
+    upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current; if (tub) { ch.inTub = tub.id; ch.x = tub.x; ch.y = tub.baseY; } else { delete ch.inTub; ch.x = x; ch.y = ly; } } });
+    if (tub) { sfx('pip'); relaxBurst(id); } else { puffAt(x, ly); sfx('pop'); }
+  };
+  // Drop a friend that's already in the building (handles climbing into the tub).
+  const settleChar = (id, x, y) => {
+    const tub = tubAt(x, y);
+    let entered = false;
+    upd((c) => {
+      const ch = c.chars.find((t) => t.id === id); if (!ch) return;
+      if (tub) { entered = ch.inTub !== tub.id; ch.inTub = tub.id; ch.x = tub.x; ch.y = tub.baseY; }
+      else { delete ch.inTub; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
+    });
+    if (tub) { sfx('pip'); if (entered) relaxBurst(id); }
+    else setTimeout(() => puffAt(x, clamp(y, CHAR_BAND[0], CHAR_BAND[1])), 230);
+  };
+  const relaxBurst = (id) => {
+    const ch = ((stRef.current && stRef.current.chars) || []).find((t) => t.id === id);
+    if (ch) spawnFloaters(ch.x, ch.y - 16, [{ t: '♨️', dx: -16 }, { t: '😌', dx: 16 }, { t: '💧', dx: 0 }]);
   };
   const stowChar = (id) => { upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) ch.building = null; }); setSel(null); };
   const paintRoom = (i) => { if (!brush) return; upd((c) => { const r = c.buildings[bid].floors[floorRef.current].rooms[i]; if (r) r[brush.t === 'wall' ? 'w' : 'f'] = brush.id; }); };
@@ -279,8 +313,8 @@ function Game() {
     sfx('pip');
     setTimeout(() => setReacts((r) => { const n = { ...r }; delete n[id]; return n; }), 1700);
   };
-  const spawnFloaters = (x, y) => {
-    const made = [{ t: '💖', dx: -18 }, { t: '💕', dx: 16 }, { t: '⭐', dx: 0 }].map((o) => ({ id: uid(), x, y, ...o }));
+  const spawnFloaters = (x, y, set) => {
+    const made = (set || [{ t: '💖', dx: -18 }, { t: '💕', dx: 16 }, { t: '⭐', dx: 0 }]).map((o) => ({ id: uid(), x, y, ...o }));
     setFloaters((f) => [...f, ...made]);
     made.forEach((m) => setTimeout(() => setFloaters((f) => f.filter((q) => q.id !== m.id)), 1100));
   };
@@ -416,7 +450,7 @@ function Game() {
             return c;
           });
         } else {
-          setSt((s) => { const c = clone(s); const ch = c.chars.find((t) => t.id === d.id); if (ch) { ch.x = w.x; ch.y = w.y; } return c; });
+          setSt((s) => { const c = clone(s); const ch = c.chars.find((t) => t.id === d.id); if (ch) { ch.x = w.x; ch.y = w.y; if (ch.inTub) delete ch.inTub; } return c; });
         }
       }
       if (d.kind === 'container' && d.moved) {
@@ -473,9 +507,7 @@ function Game() {
           });
           return;
         }
-        const landYc = clamp(w.y, CHAR_BAND[0], CHAR_BAND[1]);
-        upd((c) => { const ch = c.chars.find((t) => t.id === d.id); if (ch) ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); });
-        setTimeout(() => puffAt(w.x, landYc), 230);
+        settleChar(d.id, w.x, w.y);
       } else if (d.kind === 'container') {
         if (!d.moved) toggleContainer(d.id, e);
         return;
@@ -528,6 +560,7 @@ function Game() {
   const cpos = b.cpos || {};
   const packTotal = Object.values(st.backpack).reduce((a, v) => a + v, 0);
   const vpW = vpRef.current ? vpRef.current.getBoundingClientRect().width : 1;
+  const vpH = vpRef.current ? vpRef.current.getBoundingClientRect().height : 1;
   const curRoom = clamp(Math.round(-pan / vpW), 0, n - 1);
 
   let chip = null;
@@ -567,6 +600,8 @@ function Game() {
         @keyframes ttpop{from{scale:.5;opacity:0}to{scale:1;opacity:1}}
         @keyframes tttwinkle{0%,100%{opacity:.35;transform:translateY(0) scale(.9)}50%{opacity:1;transform:translateY(-6px) scale(1.15)}}
         @keyframes ttglow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(.92)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
+        @keyframes ttfloatbob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
+        @keyframes ttrelaxsteam{0%{opacity:0;transform:translate(-50%,6px) scale(.6)}25%{opacity:.85}100%{opacity:0;transform:translate(-50%,-28px) scale(1.15)}}
         @keyframes ttpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
         @keyframes ttwiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
         @keyframes ttfloat{0%{opacity:0;transform:translate(-50%,-30%) scale(.6)}25%{opacity:1}100%{opacity:0;transform:translate(-50%,-170%) scale(1.15)}}
@@ -805,6 +840,8 @@ function Game() {
               const Fc = def.svg ? FURN[def.svg] : null;
               const lit = !!(it.lit && def.interactive);
               const src = (lit && def.interactive.onImg && IMG[def.interactive.onImg]) ? IMG[def.interactive.onImg] : IMG[it.key];
+              const onItem = it.on ? b.items.find((t) => t.id === it.on) : null;
+              const floating = !!(onItem && ITEMS[onItem.key] && ITEMS[onItem.key].tub);
               return (
                 <div key={it.id}
                   onPointerDown={(e) => startDrag(e, { kind: 'item', id: it.id, key: it.key })}
@@ -822,7 +859,9 @@ function Game() {
                   {lit && def.interactive.glow && (
                     <div className="absolute pointer-events-none" style={{ left: '50%', top: '42%', transform: 'translate(-50%,-50%)', width: def.s * 1.5, height: def.s * 1.5, borderRadius: '50%', background: `radial-gradient(circle, ${def.interactive.glow}cc, ${def.interactive.glow}00 70%)`, mixBlendMode: 'screen', animation: 'ttglow 2.2s ease-in-out infinite' }} />
                   )}
-                  {src ? <img src={src} draggable="false" style={{ width: def.s, height: 'auto', display: 'block', pointerEvents: 'none' }} /> : Fc ? <Fc size={def.s} v={it.v || 0} /> : <span style={{ fontSize: def.s, lineHeight: 1, display: 'block', filter: 'drop-shadow(0 3px 2px rgba(0,0,0,.15))' }}>{def.e}</span>}
+                  <div style={floating ? { animation: 'ttfloatbob 2.8s ease-in-out infinite' } : undefined}>
+                    {src ? <img src={src} draggable="false" style={{ width: def.s, height: 'auto', display: 'block', pointerEvents: 'none' }} /> : Fc ? <Fc size={def.s} v={it.v || 0} /> : <span style={{ fontSize: def.s, lineHeight: 1, display: 'block', filter: 'drop-shadow(0 3px 2px rgba(0,0,0,.15))' }}>{def.e}</span>}
+                  </div>
                 </div>
               );
             })}
@@ -834,6 +873,30 @@ function Game() {
               const waving = !!reacts[c.id];
               const eatingThis = eating && eating.charId === c.id;
               const mouthState = ((eatingThis && eating.step % 2 === 0) || (feed && feed.charId === c.id)) ? 'open' : 'smile';
+              const tubItem = (c.inTub && !isDrag) ? b.items.find((t) => t.id === c.inTub && ITEMS[t.key] && ITEMS[t.key].tub) : null;
+              if (tubItem) {
+                const cs = 122, chestFrac = 0.56;
+                const HcPct = (cs * 1.4) / vpH * 100;
+                const waterY = surfTopY(tubItem, vpH);
+                const cyTub = waterY + (1 - chestFrac) * HcPct;
+                const clipB = Math.round((1 - chestFrac) * 100);
+                return (
+                  <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
+                    style={{ position: 'absolute', left: `${tubItem.x}%`, top: `${cyTub}%`, transform: 'translate(-50%,-100%)', zIndex: Math.round(tubItem.y * 10) + 6, touchAction: 'none', cursor: 'grab' }}>
+                    <span className="absolute pointer-events-none" style={{ left: '56%', top: '2%', transform: 'translate(-50%,0)', fontSize: 22, zIndex: 2, animation: 'ttrelaxsteam 2.8s ease-in-out infinite' }}>♨️</span>
+                    <span className="absolute pointer-events-none" style={{ left: '42%', top: '7%', transform: 'translate(-50%,0)', fontSize: 16, zIndex: 2, animation: 'ttrelaxsteam 3.6s ease-in-out 1s infinite' }}>♨️</span>
+                    {waving && (
+                      <div className="absolute" style={{ left: '50%', top: -2, transform: 'translate(-50%,-100%)', zIndex: 8, animation: 'ttpop .25s ease' }}>
+                        <div style={{ background: '#2E2059', color: '#ECE7FA', fontWeight: 700, fontSize: 13, padding: '6px 12px', borderRadius: 16, boxShadow: '0 6px 14px rgba(60,40,20,.22)', whiteSpace: 'nowrap' }}>{reacts[c.id]}</div>
+                        <div style={{ width: 0, height: 0, margin: '0 auto', borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '8px solid #2E2059' }} />
+                      </div>
+                    )}
+                    <div style={{ animation: `ttbob 3s ease-in-out ${i * 0.3}s infinite alternate`, clipPath: `inset(0 0 ${clipB}% 0)`, WebkitClipPath: `inset(0 0 ${clipB}% 0)`, filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
+                      <CharSVG c={c} size={cs} mood="relaxed" mouth="smile" />
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
                   style={{ position: 'absolute', left: `${c.x}%`, top: `${c.y}%`, transform: 'translate(-50%,-100%)', zIndex: Math.round(c.y * 10) + 5, touchAction: 'none', cursor: 'grab', transition: isDrag ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)' }}>
