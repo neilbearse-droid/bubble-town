@@ -21,22 +21,32 @@ const u = (name) => urls['./char/' + name + '.webp'];
 // height / width of the trimmed base body (keeps the frame the right shape)
 export const CHAR_BASE_ASPECT = 1.757;
 
-// Paint order, back -> front. The body (`base`) is painted in the middle so
-// `back` pieces fall behind it and `front` pieces in front of it.
+// Unified paint order, back -> front. Each entry references one depth slot:
+// either a BASE body part (`base: <partKey>`) or a garment piece
+// (`<category>: <part>`). The body is rigged across several slots so garments
+// interleave per-limb instead of sitting flat on top — e.g. the hands ride in
+// front of `top.front` so the arms read as going into the sleeves and the
+// hands emerging at the cuffs (see scripts/rig-base-parts.mjs).
 export const CHAR_Z = [
-  { cat: 'hair', part: 'back' },
-  { cat: 'top', part: 'back' },
-  { cat: 'base' },
-  { cat: 'bottom', part: 'front' },
-  { cat: 'shoes', part: 'front' },
-  { cat: 'top', part: 'front' },
-  { cat: 'acc', part: 'front' },
-  { cat: 'hair', part: 'front' },
+  { hair: 'back' },
+  { top: 'back' },
+  { base: 'body' },
+  { bottom: 'front' },
+  { shoes: 'front' },
+  { top: 'front' },
+  { base: 'hands' },
+  { acc: 'front' },
+  { hair: 'front' },
 ];
 
 export const CHAR_LAYERS = {
   base: {
-    tan: { url: u('base_tan') },
+    // A skin is a set of depth-ordered, full-frame body parts (inset 0) keyed by
+    // the slot names referenced in CHAR_Z above.
+    tan: {
+      body: { url: u('base_tan') },
+      hands: { url: u('base_tan_hands') },
+    },
   },
   bottom: {},
   shoes: {},

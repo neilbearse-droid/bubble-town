@@ -3,28 +3,31 @@ import { CHAR_LAYERS, CHAR_BASE_ASPECT, CHAR_Z, CHAR_KEYS } from '../assets/char
 
 // Layered illustrated paper-doll. `c` maps each category to a layer key:
 //   { skinKey, bottomKey, shoesKey, topKey, hairKey, accKey }
-// Pieces stack back-to-front (CHAR_Z) with the body painted in the middle, so a
-// wearable's `back` piece falls behind the body and its `front` piece in front
-// of it (e.g. hair length behind the head, bangs over the forehead). Each piece
-// is centred + scaled by its normalised geometry so it stays registered to the
-// base at any size.
+// The body is rigged into depth-ordered parts and garments interleave between
+// them (CHAR_Z), so clothing wraps the character instead of sitting flat on top
+// — e.g. hair length behind the head with bangs over the forehead, and hands
+// in front of the jacket sleeves. Body parts are full-frame cutouts; garment
+// pieces are centred + scaled by their normalised geometry so everything stays
+// registered to the base at any size.
 function CharSprite({ c = {}, size = 132, style }) {
   const base = CHAR_LAYERS.base[c.skinKey] || Object.values(CHAR_LAYERS.base)[0];
   const keyFor = { bottom: c.bottomKey, shoes: c.shoesKey, top: c.topKey, hair: c.hairKey, acc: c.accKey };
   return (
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>
-      {CHAR_Z.map((slot) => {
-        if (slot.cat === 'base') {
-          return base && (
-            <img key="base" src={base.url} draggable="false" alt=""
+      {CHAR_Z.map((slot, i) => {
+        const [cat, part] = Object.entries(slot)[0];
+        if (cat === 'base') {
+          const P = base && base[part];
+          return P && (
+            <img key={i} src={P.url} draggable="false" alt=""
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
           );
         }
-        const wearable = CHAR_LAYERS[slot.cat] && CHAR_LAYERS[slot.cat][keyFor[slot.cat]];
-        const L = wearable && wearable[slot.part];
+        const wearable = CHAR_LAYERS[cat] && CHAR_LAYERS[cat][keyFor[cat]];
+        const L = wearable && wearable[part];
         if (!L) return null;
         return (
-          <img key={`${slot.cat}.${slot.part}`} src={L.url} draggable="false" alt=""
+          <img key={i} src={L.url} draggable="false" alt=""
             style={{
               position: 'absolute', left: `${L.cx * 100}%`, top: `${L.cy * 100}%`,
               width: `${L.w * 100}%`, transform: 'translate(-50%,-50%)',
