@@ -17,6 +17,14 @@ function CharSprite({ c = {}, size = 132, style }) {
         const [cat, part] = Object.entries(slot)[0];
         // hide bare feet when shoes are worn (so no skin peeks around the shoe)
         if (cat === 'base' && part === 'feet' && c.shoesKey) return null;
+        // pants have two possible slots: 'full' (under the shoe) and 'over' (draped
+        // over the shoe). A WIDE/flared pant renders only at 'over'; a tight one only
+        // at 'full'. So flares cover high-tops, skinny jeans tuck into them.
+        if (cat === 'bottom') {
+          const g = CHAR_LAYERS.bottom[c.bottomKey];
+          if (!g || !!g.wide !== (part === 'over')) return null;
+          return <img key={i} src={g.full.url} draggable="false" alt="" style={FULL_FRAME} />;
+        }
         const group = cat === 'base' ? base : (CHAR_LAYERS[cat] && CHAR_LAYERS[cat][keyFor[cat]]);
         const L = group && group[part];
         if (!L) return null;

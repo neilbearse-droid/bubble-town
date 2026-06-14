@@ -109,3 +109,13 @@ up everywhere — the creator's per-slot pickers, randomised friends, presets.
 `charKeys.js` is a plain module (no Vite glob) so the data layer and Node data
 check can import it. Depth order is `CHAR_Z` (base → bottom → top → shoes → hair);
 a missing/None slot is simply skipped, so a friend can be bald/shirtless/barefoot.
+
+Two extra layering rules make footwear look right:
+- **Bare feet hide under shoes.** The base is split into `body` (legs to the
+  ankle) + `feet`; the `feet` layer is skipped whenever a shoe is worn, so no
+  bare foot peeks around a shoe that doesn't perfectly align.
+- **Wide pants drape over shoes; tight pants tuck under.** A bottom listed in
+  `CHAR_BOTTOM_WIDE` (flares, etc.) renders *over* the shoe (boot-cut look);
+  everything else renders *under* it (shoe sits on the cuff, like skinny jeans in
+  high-tops). CHAR_Z has two bottom slots (`full` under, `over` above) and
+  CharSprite draws the pant in whichever matches its `wide` flag.

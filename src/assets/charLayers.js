@@ -9,7 +9,7 @@
 // base shows through automatically = correct occlusion for free. Every layer is
 // a full-canvas, pre-aligned cutout: no per-piece geometry, no slot fitting.
 // Layers just paint at inset 0 in CHAR_Z order, so garments mix & match freely.
-import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_BOTTOM_KEYS, CHAR_SHOE_KEYS } from '../data/charKeys.js';
+import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_BOTTOM_KEYS, CHAR_BOTTOM_WIDE, CHAR_SHOE_KEYS } from '../data/charKeys.js';
 
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
@@ -24,9 +24,10 @@ export const CHAR_BASE_ASPECT = 1.418;
 export const CHAR_Z = [
   { base: 'body' }, // the skin: bald figure with face, in underwear (legs end at the ankle)
   { base: 'feet' }, // bare feet — skipped by CharSprite when shoes are on
-  { bottom: 'full' }, // pants over the legs
+  { bottom: 'full' }, // tight pants render here (UNDER the shoe — shoe over the cuff)
   { top: 'full' }, // shirt/jacket over the torso (hem over the waistband)
   { shoes: 'full' }, // over the trouser cuffs (covers the foot region)
+  { bottom: 'over' }, // WIDE/flared pants render here instead (draped OVER the shoe)
   { hair: 'full' }, // over the head
 ];
 
@@ -39,7 +40,7 @@ export const CHAR_LAYERS = {
   base: Object.fromEntries(CHAR_SKIN_KEYS.map((k) => [k, { body: { url: u('base_' + k) }, feet: { url: u('base_' + k + '_feet') } }])),
   hair: cat(CHAR_HAIR_KEYS, 'hair_'),
   top: cat(CHAR_TOP_KEYS, 'top_'),
-  bottom: cat(CHAR_BOTTOM_KEYS, 'bottom_'),
+  bottom: Object.fromEntries(CHAR_BOTTOM_KEYS.map((k) => [k, { full: { url: u('bottom_' + k) }, wide: CHAR_BOTTOM_WIDE.includes(k) }])),
   shoes: cat(CHAR_SHOE_KEYS, 'shoes_'),
 };
 
