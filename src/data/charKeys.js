@@ -17,4 +17,4 @@ export const CHAR_BOTTOM_KEYS = ['flares', 'sparkle', 'boho', 'plaid', 'shorts',
 // "tight" and the shoe sits on top of the cuff (skinny-jeans-into-sneakers).
 // Shorts don't reach the shoe, so they're moot.
 export const CHAR_BOTTOM_WIDE = ['flares', 'sparkle', 'boho', 'plaid', 'stars'];
-export const CHAR_SHOE_KEYS = ['white', 'hightop', 'green', 'boots', 'blue'];
+export const CHAR_SHOE_KEYS = ['white', 'hightop', 'green', 'boots', 'blue', 'jordan'];
