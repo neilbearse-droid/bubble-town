@@ -8,6 +8,9 @@
 // integrity check — can import the data layer without a build step.
 export const CHAR_SKIN_KEYS = ['tan'];
 export const CHAR_HAIR_KEYS = ['tousle', 'bob', 'bunny', 'bunnygold', 'blonde', 'lime'];
+// HATS render OVER the hair (topmost layer) — a hat sits on the crown and the
+// hair shows around/below it. Optional slot: a friend may wear none.
+export const CHAR_HAT_KEYS = [];
 export const CHAR_TOP_KEYS = ['tank', 'red', 'poptee', 'unicorn', 'band', 'the1975', 'u2'];
 // OVERSIZED tops hang OVER the pants (untucked); everything else is "fitted" and
 // tucks in (the pant waistband sits over the shirt hem). Tank is fitted here.

@@ -35,6 +35,7 @@ function CharSprite({ c = {}, size = 132, style }) {
     shoes: (CHAR_LAYERS.shoes[c.shoesKey] || {}).full && CHAR_LAYERS.shoes[c.shoesKey].full.url,
   };
   const hairG = CHAR_LAYERS.hair[c.hairKey];
+  const hatG = CHAR_LAYERS.hat[c.hatKey];
 
   const shoeG = CHAR_LAYERS.shoes[c.shoesKey];
   // foot fill: full bare feet when barefoot; just the ankle (toes removed) for
@@ -46,6 +47,7 @@ function CharSprite({ c = {}, size = 132, style }) {
   if (footLayer) layers.push(footLayer.url);
   for (const k of order) { if (url[k]) layers.push(url[k]); }
   if (hairG) layers.push(hairG.full.url);
+  if (hatG) layers.push(hatG.full.url); // hat over hair (crown)
 
   return (
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>

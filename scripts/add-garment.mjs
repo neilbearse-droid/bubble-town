@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Add one wardrobe garment from a magenta/green-screen render.
 //
-//   node scripts/add-garment.mjs <image> <hair|top|bottom|shoes> <key> [flags]
+//   node scripts/add-garment.mjs <image> <hair|hat|top|bottom|shoes> <key> [flags]
 //
 // Flags:
 //   --region y0:y1   override the keep-band (fractions of image height)
@@ -30,6 +30,7 @@ const FRAME = { minX: 64, minY: 138, w: 875, h: 1241 };
 
 const CAT = {
   hair: { prefix: 'hair_', region: [0.0, 0.46], list: 'CHAR_HAIR_KEYS', seal: true, minBlob: 0.0012 },
+  hat: { prefix: 'hat_', region: [0.0, 0.46], list: 'CHAR_HAT_KEYS', minBlob: 0.0015 },
   top: { prefix: 'top_', region: [0.27, 0.72], list: 'CHAR_TOP_KEYS', minBlob: 0.0018 },
   bottom: { prefix: 'bottom_', region: [0.49, 0.93], list: 'CHAR_BOTTOM_KEYS', minBlob: 0.0018 },
   shoes: { prefix: 'shoes_', region: [0.72, 1.0], list: 'CHAR_SHOE_KEYS', minBlob: 0.0015 },
@@ -38,7 +39,7 @@ const CAT = {
 // ---- args -----------------------------------------------------------------
 const [img, category, key, ...rest] = process.argv.slice(2);
 if (!img || !CAT[category] || !key) {
-  console.error('usage: node scripts/add-garment.mjs <image> <hair|top|bottom|shoes> <key> [--wide --oversized --fit --region y0:y1 --preview p.png]');
+  console.error('usage: node scripts/add-garment.mjs <image> <hair|hat|top|bottom|shoes> <key> [--wide --oversized --fit --region y0:y1 --preview p.png]');
   process.exit(1);
 }
 const flags = new Set(rest.filter((a) => a.startsWith('--')));

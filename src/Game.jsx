@@ -267,7 +267,7 @@ function Game() {
     const d = creator;
     upd((c) => {
       if (d.id && c.chars.some((x) => x.id === d.id)) {
-        Object.assign(c.chars.find((x) => x.id === d.id), { name: d.name || 'Friend', skinKey: d.skinKey, hairKey: d.hairKey, topKey: d.topKey, bottomKey: d.bottomKey, shoesKey: d.shoesKey });
+        Object.assign(c.chars.find((x) => x.id === d.id), { name: d.name || 'Friend', skinKey: d.skinKey, hairKey: d.hairKey, hatKey: d.hatKey, topKey: d.topKey, bottomKey: d.bottomKey, shoesKey: d.shoesKey });
       } else {
         c.chars.push({ ...d, id: uid(), name: d.name || 'Friend', building: null, x: 50, y: 92 });
       }
@@ -1221,6 +1221,7 @@ function Game() {
             </div>
             {CHAR_KEYS.base.length > 1 && wRow('Skin', 'base', 'skinKey', false)}
             {wRow('Hair', 'hair', 'hairKey')}
+            {CHAR_KEYS.hat.length > 0 && wRow('Hat', 'hat', 'hatKey')}
             {wRow('Top', 'top', 'topKey')}
             {wRow('Bottom', 'bottom', 'bottomKey')}
             {wRow('Shoes', 'shoes', 'shoesKey')}

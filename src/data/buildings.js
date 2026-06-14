@@ -1,5 +1,5 @@
 import { NAMES } from './items.js';
-import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_BOTTOM_KEYS, CHAR_SHOE_KEYS } from './charKeys.js';
+import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_HAT_KEYS, CHAR_TOP_KEYS, CHAR_BOTTOM_KEYS, CHAR_SHOE_KEYS } from './charKeys.js';
 import { rand, uid } from '../lib/utils.js';
 
 // containers are fixed scenery with hidden loot; x is world-%, they sit on the floor
@@ -147,6 +147,7 @@ function randomChar() {
     name: rand(NAMES), skinKey: rand(CHAR_SKIN_KEYS),
     hairKey: rand(CHAR_HAIR_KEYS), topKey: rand(CHAR_TOP_KEYS),
     bottomKey: rand(CHAR_BOTTOM_KEYS), shoesKey: rand(CHAR_SHOE_KEYS),
+    hatKey: CHAR_HAT_KEYS.length && Math.random() < 0.35 ? rand(CHAR_HAT_KEYS) : null,
     building: null, x: 50, y: 92,
   };
 }
