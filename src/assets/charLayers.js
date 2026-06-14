@@ -18,21 +18,25 @@ const u = (name) => urls['./char/' + name + '.webp'];
 export const CHAR_BASE_ASPECT = 1.418;
 
 // Depth stack, back -> front. Each layer is one full-canvas image; a missing
-// (None) slot is skipped, so you can go bald / shirtless / barefoot.
+// (None) slot is skipped, so you can go bald / shirtless / barefoot. The base's
+// feet are their own layer so they can be HIDDEN when shoes are worn — otherwise
+// a bare foot peeks around a shoe that doesn't perfectly align.
 export const CHAR_Z = [
-  { base: 'body' }, // the skin: bald figure with face, in underwear
+  { base: 'body' }, // the skin: bald figure with face, in underwear (legs end at the ankle)
+  { base: 'feet' }, // bare feet — skipped by CharSprite when shoes are on
   { bottom: 'full' }, // pants over the legs
   { top: 'full' }, // shirt/jacket over the torso (hem over the waistband)
-  { shoes: 'full' }, // over the trouser cuffs
+  { shoes: 'full' }, // over the trouser cuffs (covers the foot region)
   { hair: 'full' }, // over the head
 ];
 
-// Built from the canonical key lists by naming convention: base_<skin>.webp,
-// hair_<k>.webp, top_<k>.webp, bottom_<k>.webp, shoes_<k>.webp. Add a key in
-// charKeys.js + drop the matching asset in char/ and it lights up everywhere.
+// Built from the canonical key lists by naming convention: base_<skin>.webp (+
+// base_<skin>_feet.webp), hair_<k>.webp, top_<k>.webp, bottom_<k>.webp,
+// shoes_<k>.webp. Add a key in charKeys.js + drop the matching asset and it
+// lights up everywhere.
 const cat = (keys, prefix) => Object.fromEntries(keys.map((k) => [k, { full: { url: u(prefix + k) } }]));
 export const CHAR_LAYERS = {
-  base: Object.fromEntries(CHAR_SKIN_KEYS.map((k) => [k, { body: { url: u('base_' + k) } }])),
+  base: Object.fromEntries(CHAR_SKIN_KEYS.map((k) => [k, { body: { url: u('base_' + k) }, feet: { url: u('base_' + k + '_feet') } }])),
   hair: cat(CHAR_HAIR_KEYS, 'hair_'),
   top: cat(CHAR_TOP_KEYS, 'top_'),
   bottom: cat(CHAR_BOTTOM_KEYS, 'bottom_'),

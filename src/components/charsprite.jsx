@@ -15,6 +15,8 @@ function CharSprite({ c = {}, size = 132, style }) {
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>
       {CHAR_Z.map((slot, i) => {
         const [cat, part] = Object.entries(slot)[0];
+        // hide bare feet when shoes are worn (so no skin peeks around the shoe)
+        if (cat === 'base' && part === 'feet' && c.shoesKey) return null;
         const group = cat === 'base' ? base : (CHAR_LAYERS[cat] && CHAR_LAYERS[cat][keyFor[cat]]);
         const L = group && group[part];
         if (!L) return null;
