@@ -79,7 +79,9 @@ Same render style as the reference. Full body, identical crop, magenta backgroun
 ## Integration (what the maintainer runs on a new render)
 
 1. **Key** the magenta: a pixel is background/skin if `R>110 && B>90 && G <
-   min(R,B)*0.72`. Everything else is kept.
+   min(R,B)*0.72`. Everything else is kept. **Also respect any existing alpha** —
+   some renders export with the background *already transparent* (alpha 0); drop
+   those pixels too, or the empty background gets painted opaque (a black blob).
 2. **De-spill** (hue-safe): `m = min(R,B); if (m > G) { R -= m-G; B -= m-G }` —
    removes the magenta fringe without shifting warm colors.
 3. **Drop specks:** connected-component the alpha, discard islands `< ~0.3%` of
