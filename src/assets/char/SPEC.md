@@ -28,6 +28,16 @@ rig, no per-limb slots, no geometry. Each layer is a full-canvas PNG at `inset:0
 > cut leaks one piece into another and a lower garment's hidden upper half can't
 > be recovered. Render the **pants alone** and you get the whole pants.
 
+### Pick a key color the garment doesn't use
+Magenta is the default, but a **pink or red** garment is indistinguishable from
+the magenta skin/background — the key eats its edges and pink areas (e.g. a pink
+t-shirt body vanishes, leaving only its graphic). For any garment with pink/red/
+magenta in it, render it on a **green screen instead**: green skin, blank green
+head, solid **`#00FF00`** background. Green is far from skin and pink, so it
+clips clean. (Conversely, use magenta for a *green* garment.) Integration
+auto-detects which screen the render uses (samples the corners) and keys that
+color, so either screen drops in the same way.
+
 ### Why it must be the same pose
 The base and every garment are separate renders, so they only line up if they
 share the **exact pose, proportions, scale, and crop**. Generate each new render
