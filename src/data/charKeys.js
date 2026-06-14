@@ -7,7 +7,7 @@
 // Plain module (no Vite `import.meta.glob`) so Node scripts — e.g. the data
 // integrity check — can import the data layer without a build step.
 export const CHAR_SKIN_KEYS = ['tan'];
-export const CHAR_HAIR_KEYS = ['tousle', 'bob'];
+export const CHAR_HAIR_KEYS = ['tousle', 'bob', 'bunny'];
 export const CHAR_TOP_KEYS = ['hoodie', 'tank', 'red', 'poptee', 'unicorn', 'cupcake', 'band', 'the1975', 'u2'];
 export const CHAR_BOTTOM_KEYS = ['flares', 'sparkle', 'boho', 'plaid', 'leggings', 'shorts', 'stars'];
 export const CHAR_SHOE_KEYS = ['white', 'canvas'];
