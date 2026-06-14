@@ -7,6 +7,7 @@
 //   --region y0:y1   override the keep-band (fractions of image height)
 //   --wide           bottom drapes OVER shoes (adds key to CHAR_BOTTOM_WIDE)
 //   --oversized      top hangs OVER pants (adds key to CHAR_TOP_OVERSIZED)
+//   --open           open-back shoe (Crocs/sandals) — keeps the bare foot visible
 //   --fit            grow the piece to the base leg/arm silhouette (for tight
 //                    pants that key out narrower than the body)
 //   --preview p.png  also write a composite preview onto the base
@@ -162,6 +163,7 @@ let keys = readFileSync(KEYS_FILE, 'utf8');
 keys = addToList(keys, cfg.list, key);
 if (flags.has('--wide')) keys = addToList(keys, 'CHAR_BOTTOM_WIDE', key);
 if (flags.has('--oversized')) keys = addToList(keys, 'CHAR_TOP_OVERSIZED', key);
+if (flags.has('--open')) keys = addToList(keys, 'CHAR_SHOE_OPEN', key);
 writeFileSync(KEYS_FILE, keys);
 console.log('registered', key, 'in', cfg.list + (flags.has('--wide') ? ' + CHAR_BOTTOM_WIDE' : '') + (flags.has('--oversized') ? ' + CHAR_TOP_OVERSIZED' : ''));
 console.log('done. review the preview, then commit.');

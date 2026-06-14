@@ -36,8 +36,13 @@ function CharSprite({ c = {}, size = 132, style }) {
   };
   const hairG = CHAR_LAYERS.hair[c.hairKey];
 
+  const shoeG = CHAR_LAYERS.shoes[c.shoesKey];
+  // bare feet show when barefoot OR wearing an open-back shoe (Crocs/sandals show
+  // the foot through them); closed shoes enclose the foot so we hide it.
+  const showFeet = !c.shoesKey || (shoeG && shoeG.open);
+
   const layers = [base.body.url];
-  if (!c.shoesKey && base.feet) layers.push(base.feet.url); // bare feet, hidden when shoes are on
+  if (showFeet && base.feet) layers.push(base.feet.url);
   for (const k of order) { if (url[k]) layers.push(url[k]); }
   if (hairG) layers.push(hairG.full.url);
 

@@ -9,7 +9,7 @@
 // base shows through automatically = correct occlusion for free. Every layer is
 // a full-canvas, pre-aligned cutout: no per-piece geometry, no slot fitting.
 // Layers just paint at inset 0 in CHAR_Z order, so garments mix & match freely.
-import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_TOP_OVERSIZED, CHAR_BOTTOM_KEYS, CHAR_BOTTOM_WIDE, CHAR_SHOE_KEYS } from '../data/charKeys.js';
+import { CHAR_SKIN_KEYS, CHAR_HAIR_KEYS, CHAR_TOP_KEYS, CHAR_TOP_OVERSIZED, CHAR_BOTTOM_KEYS, CHAR_BOTTOM_WIDE, CHAR_SHOE_KEYS, CHAR_SHOE_OPEN } from '../data/charKeys.js';
 
 const urls = import.meta.glob('./char/*.webp', { eager: true, query: '?url', import: 'default' });
 const u = (name) => urls['./char/' + name + '.webp'];
@@ -41,7 +41,7 @@ export const CHAR_LAYERS = {
   hair: cat(CHAR_HAIR_KEYS, 'hair_'),
   top: Object.fromEntries(CHAR_TOP_KEYS.map((k) => [k, { full: { url: u('top_' + k) }, oversized: CHAR_TOP_OVERSIZED.includes(k) }])),
   bottom: Object.fromEntries(CHAR_BOTTOM_KEYS.map((k) => [k, { full: { url: u('bottom_' + k) }, wide: CHAR_BOTTOM_WIDE.includes(k) }])),
-  shoes: cat(CHAR_SHOE_KEYS, 'shoes_'),
+  shoes: Object.fromEntries(CHAR_SHOE_KEYS.map((k) => [k, { full: { url: u('shoes_' + k) }, open: CHAR_SHOE_OPEN.includes(k) }])),
 };
 
 // keys present for each category (handy for the wardrobe UI)
