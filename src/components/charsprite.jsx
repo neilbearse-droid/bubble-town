@@ -3,28 +3,33 @@ import { CHAR_LAYERS, CHAR_BASE_ASPECT, CHAR_Z, CHAR_KEYS } from '../assets/char
 
 // Layered illustrated paper-doll. `c` maps each category to a layer key:
 //   { skinKey, bottomKey, shoesKey, topKey, hairKey, accKey }
-// Layers stack back-to-front (CHAR_Z); each overlay is centred + scaled by its
-// normalised geometry so it stays registered to the base at any size.
+// The body is rigged into depth-ordered parts and garments interleave between
+// them (CHAR_Z), so clothing wraps the character instead of sitting flat on top
+// — e.g. hair length behind the head with bangs over the forehead, hands in
+// front of the sleeves, and shoes over the trouser cuffs (see SPEC.md).
+//
+// Every layer registers to the same frame. Purpose-drawn art is authored
+// full-canvas (no geometry → painted at inset 0); legacy trimmed pieces carry a
+// normalised { w, cx, cy } and are centred + scaled. Missing slots are skipped,
+// so the rig lights up part-by-part as art lands.
+const FULL_FRAME = { position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', pointerEvents: 'none' };
+
 function CharSprite({ c = {}, size = 132, style }) {
   const base = CHAR_LAYERS.base[c.skinKey] || Object.values(CHAR_LAYERS.base)[0];
-  const keyFor = { bottom: c.bottomKey, shoes: c.shoesKey, top: c.topKey, hair: c.hairKey, acc: c.accKey };
+  const keyFor = { base, bottom: c.bottomKey, shoes: c.shoesKey, top: c.topKey, hair: c.hairKey, acc: c.accKey };
   return (
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>
-      {base && (
-        <img src={base.url} draggable="false" alt=""
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block', pointerEvents: 'none' }} />
-      )}
-      {CHAR_Z.filter((z) => z !== 'base').map((cat) => {
-        const L = CHAR_LAYERS[cat] && CHAR_LAYERS[cat][keyFor[cat]];
+      {CHAR_Z.map((slot, i) => {
+        const [cat, part] = Object.entries(slot)[0];
+        const group = cat === 'base' ? base : (CHAR_LAYERS[cat] && CHAR_LAYERS[cat][keyFor[cat]]);
+        const L = group && group[part];
         if (!L) return null;
-        return (
-          <img key={cat} src={L.url} draggable="false" alt=""
-            style={{
-              position: 'absolute', left: `${L.cx * 100}%`, top: `${L.cy * 100}%`,
-              width: `${L.w * 100}%`, transform: 'translate(-50%,-50%)',
-              display: 'block', pointerEvents: 'none',
-            }} />
-        );
+        const placed = L.w == null ? FULL_FRAME : {
+          position: 'absolute', left: `${L.cx * 100}%`, top: `${L.cy * 100}%`,
+          width: `${L.w * 100}%`, transform: 'translate(-50%,-50%)',
+          display: 'block', pointerEvents: 'none',
+        };
+        return <img key={i} src={L.url} draggable="false" alt="" style={placed} />;
       })}
     </div>
   );
