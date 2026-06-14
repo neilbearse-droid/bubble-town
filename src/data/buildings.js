@@ -134,7 +134,7 @@ function defaultState() {
     v: 5, buildingsV: 5,
     sound: true, night: false, event: null,
     chars: [
-      { id: uid(), name: 'Maya', skinKey: CHAR_SKIN_KEYS[0], hairKey: 'tousle', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'white', building: 'home', floor: 0, x: 62, y: 95 },
+      { id: uid(), name: 'Maya', skinKey: CHAR_SKIN_KEYS[0], hairKey: 'tousle', topKey: 'red', bottomKey: 'flares', shoesKey: 'white', building: 'home', floor: 0, x: 62, y: 95 },
     ],
     backpack: {},
     plots: [null, null, null],

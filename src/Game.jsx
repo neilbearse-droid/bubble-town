@@ -65,7 +65,7 @@ function Game() {
       // looks (skin/hair/outfit colors) and bundled outfit keys are retired; we
       // keep each friend's name & place and give them mix-and-match garments.
       const MIGRATE_LOOKS = [
-        { hairKey: 'tousle', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'white' },
+        { hairKey: 'tousle', topKey: 'red', bottomKey: 'flares', shoesKey: 'white' },
         { hairKey: 'bob', topKey: 'tank', bottomKey: 'flares', shoesKey: 'canvas' },
       ];
       const OUTFIT_MAP = { everyday: MIGRATE_LOOKS[0], futurepop: MIGRATE_LOOKS[1] };
