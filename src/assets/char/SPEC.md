@@ -12,20 +12,28 @@ survives is a clean, body-conformed, pre-aligned cutout.
 
 - **Base (the "skin"):** the figure with **normal skin + a simple face**, bald,
   in plain underwear. Keying removes only the background → the bare body.
-- **Outfit:** the **same figure**, but with **magenta skin and a blank magenta
-  head** (no face), fully dressed. Keying removes the background *and the skin*,
-  leaving only the **clothing + hair**, already shaped to the body.
+- **Garment:** the **same figure**, but with **magenta skin and a blank magenta
+  head** (no face), wearing **one garment** (a top, OR a bottom, OR shoes, OR
+  hair). Keying removes the background *and the skin*, leaving only that garment,
+  already shaped to the body.
 
-Stacking an outfit over the base then gives correct occlusion **for free**: where
-clothing exposes skin (neck, hands, the forearm below a short sleeve), that skin
-was magenta → keyed to transparent → the base shows through. No rig, no per-limb
-slots, no geometry. Each layer is just a full-canvas PNG painted at `inset: 0`.
+The wardrobe is **mix-and-match**: each garment is its own layer, so stacking
+base → bottom → top → shoes → hair lets you swap any one slot independently.
+Occlusion is **free** — where a garment exposes skin (neck, hands, midriff, bare
+legs), that skin was magenta → keyed to transparent → the base shows through. No
+rig, no per-limb slots, no geometry. Each layer is a full-canvas PNG at `inset:0`.
+
+> **One garment per render.** Don't render a full outfit and slice it: garments
+> overlap (a shirt over the waistband, hair on the shoulders), so a horizontal
+> cut leaks one piece into another and a lower garment's hidden upper half can't
+> be recovered. Render the **pants alone** and you get the whole pants.
 
 ### Why it must be the same pose
-The base and every outfit are separate renders, so they only line up if they
+The base and every garment are separate renders, so they only line up if they
 share the **exact pose, proportions, scale, and crop**. Generate each new render
 **using the base as the reference/control image**, changing only skin/face and
-the clothes. Same `1024 × 1536` frame, centered, identical crop.
+the one garment. Same `1024 × 1536` frame, centered, identical crop. Integration
+trims every asset to a shared bounding box so the figure fills the frame.
 
 ## Prompts
 
@@ -38,24 +46,25 @@ cheeks. Bald, wearing only plain light-grey underwear. Same 3D-ish soft-shaded
 chibi render style. Full body, centered, on a solid #FF00FF magenta background.
 ```
 
-**Outfit (complete look):**
+**Garment (one item — top / bottom / shoes / hair):**
 ```
 Use the attached reference figure. Keep the EXACT same character, pose,
 proportions, scale, and framing, arms in the same position. Paint ALL SKIN solid
 #FF00FF magenta and make the HEAD a blank magenta blob with NO face. Background:
-solid #FF00FF magenta. Dress the figure (each item normal colors):
-  • Top:    <a mustard hoodie>
-  • Bottom: <blue jeans>
-  • Shoes:  <white sneakers>
-  • Hair:   <short brown hair, FULL and dense, tufts overlapping with NO gaps,
-            fully covering the crown and back — no scalp/background showing>
+solid #FF00FF magenta. Dress the figure in ONLY <one garment>, in normal colors —
+everything else is bare (magenta): no other clothing, no shoes, no hair.
+  • for a TOP:    <a mustard hoodie>, bare magenta legs/feet, blank magenta head
+  • for a BOTTOM: <blue jeans>, bare magenta torso/feet, blank magenta head
+  • for SHOES:    <white sneakers>, bare magenta legs, blank magenta head
+  • for HAIR:     <short brown hair> in its real color, full & dense (tufts
+                  overlapping, no gaps), no clothing
 Same render style as the reference. Full body, identical crop, magenta background.
 ```
 
-> Keep the head a **blank magenta blob** (hair on top is fine — hair is the one
-> head thing we keep). Any face features left on would survive the key.
-> Make hair **full/dense** or the background pokes through the tufts (auto-sealed
-> in integration, but fuller art is cleaner).
+> Keep the head a **blank magenta blob** (hair, when it's the garment, is fine).
+> Any face features left on would survive the key. Make hair **full/dense** or the
+> background pokes through the tufts (auto-sealed in integration, but fuller art
+> is cleaner).
 
 ## Integration (what the maintainer runs on a new render)
 
@@ -71,25 +80,20 @@ Same render style as the reference. Full body, identical crop, magenta backgroun
 
 ## File naming & registry
 
-Assets follow a naming convention so a new look needs **no wiring**:
+Assets follow a naming convention so a new garment needs **no wiring**:
 ```
-base_<skin>.webp          e.g. base_tan.webp
-outfit_<name>.webp        e.g. outfit_everyday.webp
+base_<skin>.webp     hair_<k>.webp     top_<k>.webp
+bottom_<k>.webp      shoes_<k>.webp
 ```
 
-To add a skin or outfit:
+To add a garment (or skin):
 1. Drop the trimmed `.webp` in `src/assets/char/`.
-2. Add its key to `src/data/charKeys.js` (`CHAR_SKIN_KEYS` / `CHAR_OUTFIT_KEYS`).
+2. Add its key to the matching list in `src/data/charKeys.js`
+   (`CHAR_HAIR_KEYS` / `CHAR_TOP_KEYS` / `CHAR_BOTTOM_KEYS` / `CHAR_SHOE_KEYS` /
+   `CHAR_SKIN_KEYS`).
 
 `charLayers.js` builds the registry from those keys by convention, and it lights
-up everywhere — the creator's outfit picker, randomised friends, presets.
+up everywhere — the creator's per-slot pickers, randomised friends, presets.
 `charKeys.js` is a plain module (no Vite glob) so the data layer and Node data
-check can import it.
-
-## Later: mix-and-match
-
-Complete outfits look best and are the default. To mix tops/bottoms/shoes
-independently, render each **item alone** on the magenta figure (same pose) and
-add per-category layers to `CHAR_Z` (`bottom → top → shoes → hair`), keyed the
-same way. The stack order is the only thing that matters; alignment is inherited
-from the shared pose.
+check can import it. Depth order is `CHAR_Z` (base → bottom → top → shoes → hair);
+a missing/None slot is simply skipped, so a friend can be bald/shirtless/barefoot.

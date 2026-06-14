@@ -61,6 +61,16 @@ function Game() {
     (async () => {
       let keys = [];
       try { const l = await storage.list('tiny_town'); keys = (l && l.keys) || []; } catch (e) { keys = []; }
+      // Convert any legacy friend to the per-slot illustrated wardrobe. Old SVG
+      // looks (skin/hair/outfit colors) and bundled outfit keys are retired; we
+      // keep each friend's name & place and give them mix-and-match garments.
+      const MIGRATE_LOOKS = [
+        { hairKey: 'tousle', topKey: 'hoodie', bottomKey: 'flares', shoesKey: 'white' },
+        { hairKey: 'bob', topKey: 'tank', bottomKey: 'flares', shoesKey: 'canvas' },
+        { hairKey: 'mohawk', topKey: 'jacket', bottomKey: 'ripped', shoesKey: 'black' },
+      ];
+      const OUTFIT_MAP = { everyday: MIGRATE_LOOKS[0], futurepop: MIGRATE_LOOKS[1] };
+      const slotsFor = (c, i) => OUTFIT_MAP[c && c.outfitKey] || MIGRATE_LOOKS[i % MIGRATE_LOOKS.length];
       if (keys.includes(KEY)) {
         try {
           const r = await storage.get(KEY);
@@ -70,17 +80,15 @@ function Game() {
             if (p.sound === undefined) p.sound = true;
             if (p.night === undefined) p.night = false;
             if (p.event === undefined) p.event = null;
-            if (!p.buildingsV || p.buildingsV < 4) {
+            if (!p.buildingsV || p.buildingsV < 5) {
               const ns = defaultState();
               ns.sound = p.sound; ns.night = p.night; ns.event = p.event;
               ns.backpack = p.backpack || {};
               ns.plots = p.plots;
-              // The old SVG character look (skin/hair/outfit colors) is retired; keep
-              // each friend's identity & place, give them an illustrated outfit.
               if (Array.isArray(p.chars) && p.chars.length) {
                 ns.chars = p.chars.map((c, i) => ({
                   id: c.id || uid(), name: c.name || 'Friend',
-                  skinKey: CHAR_KEYS.base[0], outfitKey: CHAR_KEYS.outfit[i % CHAR_KEYS.outfit.length],
+                  skinKey: CHAR_KEYS.base[0], ...slotsFor(c, i),
                   building: c.building || null, floor: 0,
                   x: clamp(c.x == null ? 50 : c.x, 2, 98), y: clamp(c.y == null ? 92 : c.y, CHAR_BAND[0], CHAR_BAND[1]),
                   ...(c.inTub ? { inTub: c.inTub } : {}),
@@ -103,7 +111,7 @@ function Game() {
             if (o.chars && o.chars.length) {
               fresh.chars = o.chars.map((c, i) => ({
                 id: c.id || uid(), name: c.name || 'Friend',
-                skinKey: CHAR_KEYS.base[0], outfitKey: CHAR_KEYS.outfit[i % CHAR_KEYS.outfit.length],
+                skinKey: CHAR_KEYS.base[0], ...slotsFor(c, i),
                 building: null, floor: 0, x: 50, y: 92,
               }));
             }
@@ -260,7 +268,7 @@ function Game() {
     const d = creator;
     upd((c) => {
       if (d.id && c.chars.some((x) => x.id === d.id)) {
-        Object.assign(c.chars.find((x) => x.id === d.id), { name: d.name || 'Friend', skinKey: d.skinKey, outfitKey: d.outfitKey });
+        Object.assign(c.chars.find((x) => x.id === d.id), { name: d.name || 'Friend', skinKey: d.skinKey, hairKey: d.hairKey, topKey: d.topKey, bottomKey: d.bottomKey, shoesKey: d.shoesKey });
       } else {
         c.chars.push({ ...d, id: uid(), name: d.name || 'Friend', building: null, x: 50, y: 92 });
       }
@@ -268,6 +276,22 @@ function Game() {
     setCreator(null); setView('building'); setMode('people'); setDockOpen(true);
   };
   const deleteChar = (id) => { upd((c) => { c.chars = c.chars.filter((x) => x.id !== id); }); setCreator(null); setSel(null); };
+  // one wardrobe row of pill options for a character slot (None = take it off)
+  const wRow = (label, cat, field, allowNone = true) => (
+    <div className="mt-3" key={field}>
+      <div className="text-xs font-bold mb-1.5" style={{ color: '#9D95C0' }}>{label}</div>
+      <div className="flex flex-wrap gap-2">
+        {allowNone && (
+          <button onClick={() => setCreator({ ...creator, [field]: null })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95"
+            style={{ background: !creator[field] ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: !creator[field] ? '#FFF' : '#A24BFF' }}>None</button>
+        )}
+        {CHAR_KEYS[cat].map((k) => (
+          <button key={k} onClick={() => setCreator({ ...creator, [field]: k })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95 capitalize"
+            style={{ background: creator[field] === k ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: creator[field] === k ? '#FFF' : '#A24BFF' }}>{k}</button>
+        ))}
+      </div>
+    </div>
+  );
   const enterBuilding = (id) => {
     setBid(id); setView('building'); setMode('items'); setDockOpen(false); setSel(null); setPan(0); setCurFloor(0);
     upd((c) => { c.buildings[id].floors.forEach((f) => { f.looted = {}; f.copen = {}; }); }); // secrets restock & re-close every visit
@@ -1196,26 +1220,11 @@ function Game() {
                 </button>
               </div>
             </div>
-            {CHAR_KEYS.base.length > 1 && (
-              <div className="mt-3">
-                <div className="text-xs font-bold mb-1.5" style={{ color: '#9D95C0' }}>Skin</div>
-                <div className="flex flex-wrap gap-2">
-                  {CHAR_KEYS.base.map((k) => (
-                    <button key={k} onClick={() => setCreator({ ...creator, skinKey: k })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95 capitalize"
-                      style={{ background: creator.skinKey === k ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: creator.skinKey === k ? '#FFF' : '#A24BFF' }}>{k}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div className="mt-3">
-              <div className="text-xs font-bold mb-1.5" style={{ color: '#9D95C0' }}>Outfit</div>
-              <div className="flex flex-wrap gap-2">
-                {CHAR_KEYS.outfit.map((k) => (
-                  <button key={k} onClick={() => setCreator({ ...creator, outfitKey: k })} className="rounded-full px-3.5 py-2 text-xs font-bold active:scale-95 capitalize"
-                    style={{ background: creator.outfitKey === k ? '#A24BFF' : 'rgba(255,255,255,0.08)', color: creator.outfitKey === k ? '#FFF' : '#A24BFF' }}>{k}</button>
-                ))}
-              </div>
-            </div>
+            {CHAR_KEYS.base.length > 1 && wRow('Skin', 'base', 'skinKey', false)}
+            {wRow('Hair', 'hair', 'hairKey')}
+            {wRow('Top', 'top', 'topKey')}
+            {wRow('Bottom', 'bottom', 'bottomKey')}
+            {wRow('Shoes', 'shoes', 'shoesKey')}
             <div className="flex gap-2 mt-4">
               {creator.id && (
                 <button onClick={() => deleteChar(creator.id)} className="rounded-2xl px-4 py-3 active:scale-95" style={{ background: 'rgba(255,90,110,0.16)', color: '#FF8FA3' }}>
