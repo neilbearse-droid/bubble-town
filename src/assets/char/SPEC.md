@@ -5,25 +5,6 @@ it and any new shirt / pants / hair becomes **pure art** — no code or rig
 changes. The authoritative depth order lives in `src/assets/charLayers.js`
 (`CHAR_Z`); this file documents how to fill it.
 
-## 0. Art style & pose — Toca Boca flat (authoritative)
-
-The target look is **Toca Boca Life World**: flat, minimal, clean. This overrides
-any older "glossy kawaii chibi" wording further down — that earlier base was the
-wrong style (shaded + splayed arms) and is being replaced.
-
-- **Flat 2D vector.** Solid fill colors, **no** shading, gradients, glossy
-  highlights, or drop shadows. A **thin, clean, dark outline**.
-- **Tiny minimal face.** Big rounded flat head; two small dark oval/dot eyes set
-  wide; a small rounded nose; tiny mouth; soft round rosy cheeks. Optional
-  freckles/eyelashes.
-- **Pose: arms hang STRAIGHT DOWN at the sides**, ending in simple rounded
-  **mitten hands** near the hips/thighs. Never an A-pose or splayed arms — this is
-  what makes sleeves a clean vertical shape with the hand below.
-- **Simple compact body**, short simple legs, flat feet. Muted pastel palette.
-- Why it matters for the rig: with arms down, `sleeve_upper → arm_fore →
-  sleeve_fore → hand` is just stacked vertical shapes, so wraps line up with no
-  gaps. Flat shapes sit *inside* the silhouette instead of looking pasted on.
-
 ## 1. Master canvas & registration
 
 - **One shared canvas for everything.** Every layer — each body part and each
@@ -138,23 +119,14 @@ Steps:
 
 ### Prompt skeletons
 
-Use the **Toca Boca flat style** from §0 in every prompt (flat solid colors, no
-shading, thin clean outline, arms straight down, mitten hands).
-
-- **Whole base (preferred first pass):** "Flat 2D vector character, Toca Boca
-  Life World art style: minimalist cartoon, big rounded head, tiny simple face —
-  two small dark oval eyes set wide, small rounded nose, tiny mouth, soft rosy
-  cheeks. THIN clean dark outline, FLAT solid colors, NO shading/gradient/glossy.
-  Standing front view, short compact body, ARMS HANGING STRAIGHT DOWN at the
-  sides ending in rounded mitten hands, short legs, bare feet, bald, plain light
-  underwear. Full body centered, solid #FF00FF magenta background. NEGATIVE:
-  shading, gradient, 3D, glossy, realistic, splayed arms, A-pose, drop shadow."
-- **Base part (per skin):** same style words as above, then "ONLY the <part>
-  (e.g. left forearm) and nothing else, solid #FF00FF magenta background."
-- **Garment piece:** "<garment>, the <part> only (e.g. left sleeve), Toca Boca
-  flat style, flat solid color, thin clean outline, sized to the reference body,
-  ONLY that piece, solid #FF00FF magenta background." Always name the single part
-  so the model doesn't draw a whole outfit.
+- **Base part (per skin):** "<part name> of a chibi toddler, warm tan skin, bald,
+  big glossy brown eyes (head only), plain light-grey briefs (torso only), flat
+  soft-shaded kawaii cartoon, thick clean dark outline, front view, ONLY the
+  <part> and nothing else, solid #FF00FF magenta background."
+- **Garment piece:** "<garment>, the <part> only (e.g. left upper sleeve), sized
+  to the reference body, same line weight/shading, ONLY that piece, solid
+  #FF00FF magenta background." Always name the single part so the model doesn't
+  draw a whole outfit.
 
 ## 7. Bootstrap state (today)
 
