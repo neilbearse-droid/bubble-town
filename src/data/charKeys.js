@@ -10,6 +10,4 @@ export const CHAR_SKIN_KEYS = ['tan'];
 export const CHAR_HAIR_KEYS = ['tousle', 'bob', 'bunny', 'bunnygold'];
 export const CHAR_TOP_KEYS = ['tank', 'red', 'poptee', 'unicorn', 'band', 'the1975', 'u2'];
 export const CHAR_BOTTOM_KEYS = ['flares', 'sparkle', 'boho', 'plaid', 'shorts', 'stars', 'leggings'];
-// Shoes temporarily empty — the old sole-only slices were removed; clean
-// single-shoe renders (full shoe, bare legs) drop back in as 'white'/'canvas'.
-export const CHAR_SHOE_KEYS = [];
+export const CHAR_SHOE_KEYS = ['white', 'hightop'];

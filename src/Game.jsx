@@ -66,7 +66,7 @@ function Game() {
       // keep each friend's name & place and give them mix-and-match garments.
       const MIGRATE_LOOKS = [
         { hairKey: 'tousle', topKey: 'red', bottomKey: 'flares', shoesKey: 'white' },
-        { hairKey: 'bob', topKey: 'tank', bottomKey: 'flares', shoesKey: 'canvas' },
+        { hairKey: 'bob', topKey: 'tank', bottomKey: 'flares', shoesKey: 'hightop' },
       ];
       const OUTFIT_MAP = { everyday: MIGRATE_LOOKS[0], futurepop: MIGRATE_LOOKS[1] };
       const slotsFor = (c, i) => OUTFIT_MAP[c && c.outfitKey] || MIGRATE_LOOKS[i % MIGRATE_LOOKS.length];
