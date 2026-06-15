@@ -854,7 +854,7 @@ function Game() {
               const imgW = ci ? (open ? ci.ow : ci.cw) : 0;
               const baseW = (ci && ci.cw) ? ci.cw : cd.s;
               return (
-                <div key={cn.id} className="absolute" style={{ left: `${pos.x}%`, top: `${pos.y}%`, transform: 'translate(-50%,-100%)', zIndex: Math.round(pos.y * 10) + 1, touchAction: 'none', cursor: 'grab', transition: isDragC ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)' }}
+                <div key={cn.id} className="absolute" style={{ left: `${pos.x}%`, top: `${pos.y}%`, width: 'max-content', transform: 'translate(-50%,-100%)', zIndex: Math.round(pos.y * 10) + 1, touchAction: 'none', cursor: 'grab', transition: isDragC ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)' }}
                   onPointerDown={(e) => startDrag(e, { kind: 'container', id: cn.id, t: cn.t })}>
                   <div className="absolute" style={{ left: '50%', bottom: -7, transform: 'translateX(-50%)', width: baseW * 0.8, height: baseW * 0.16, borderRadius: '50%', background: 'radial-gradient(rgba(60,40,30,.28),transparent 70%)' }} />
                   {imgSrc ? <img src={imgSrc} draggable="false" style={{ width: imgW, height: 'auto', display: 'block', pointerEvents: 'none' }} /> : <cd.C size={cd.s} open={open} />}
@@ -877,7 +877,7 @@ function Game() {
                 <div key={it.id}
                   onPointerDown={(e) => startDrag(e, { kind: 'item', id: it.id, key: it.key })}
                   style={{
-                    position: 'absolute', left: `${it.x}%`, top: `${it.y}%`,
+                    position: 'absolute', left: `${it.x}%`, top: `${it.y}%`, width: 'max-content',
                     transform: `translate(-50%,-100%)${it.flip ? ' scaleX(-1)' : ''}`,
                     zIndex: itemZ(it.key, it.by != null ? it.by : it.y, it.on), touchAction: 'none', cursor: 'grab',
                     transition: isDrag ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)',
@@ -912,7 +912,7 @@ function Game() {
                 const clipB = Math.round((1 - chestFrac) * 100);
                 return (
                   <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
-                    style={{ position: 'absolute', left: `${tubItem.x}%`, top: `${cyTub}%`, transform: 'translate(-50%,-100%)', zIndex: Math.round(tubItem.y * 10) + 6, touchAction: 'none', cursor: 'grab' }}>
+                    style={{ position: 'absolute', left: `${tubItem.x}%`, top: `${cyTub}%`, width: 'max-content', transform: 'translate(-50%,-100%)', zIndex: Math.round(tubItem.y * 10) + 6, touchAction: 'none', cursor: 'grab' }}>
                     <span className="absolute pointer-events-none" style={{ left: '56%', top: '2%', transform: 'translate(-50%,0)', fontSize: 22, zIndex: 2, animation: 'ttrelaxsteam 2.8s ease-in-out infinite' }}>♨️</span>
                     <span className="absolute pointer-events-none" style={{ left: '42%', top: '7%', transform: 'translate(-50%,0)', fontSize: 16, zIndex: 2, animation: 'ttrelaxsteam 3.6s ease-in-out 1s infinite' }}>♨️</span>
                     {waving && (
@@ -929,7 +929,7 @@ function Game() {
               }
               return (
                 <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
-                  style={{ position: 'absolute', left: `${c.x}%`, top: `${c.y}%`, transform: 'translate(-50%,-100%)', zIndex: Math.round(c.y * 10) + 5, touchAction: 'none', cursor: 'grab', transition: isDrag ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)' }}>
+                  style={{ position: 'absolute', left: `${c.x}%`, top: `${c.y}%`, width: 'max-content', transform: 'translate(-50%,-100%)', zIndex: Math.round(c.y * 10) + 5, touchAction: 'none', cursor: 'grab', transition: isDrag ? 'none' : 'top .35s cubic-bezier(.34,1.56,.64,1)' }}>
                   <div style={{ position: 'absolute', left: '50%', bottom: -6, transform: 'translateX(-50%)', width: 60, height: 14, borderRadius: '50%', background: 'radial-gradient(rgba(60,40,30,.28),transparent 70%)' }} />
                   {waving && (
                     <div className="absolute" style={{ left: '50%', top: -6, transform: 'translate(-50%,-100%)', zIndex: 8, animation: 'ttpop .25s ease' }}>
