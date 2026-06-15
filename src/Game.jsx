@@ -1016,15 +1016,20 @@ function Game() {
                     </div>
                   );
                 }
-                const cs = 118, clipFrac = 0.24;
+                const cs = 116;
                 const HcPct = (cs * CHAR_BASE_ASPECT) / vpH * 100;
-                const cy = seatY + clipFrac * HcPct;
-                const clipB = Math.round(clipFrac * 100);
+                // We can't bend the legs, so seat the friend with the hips on the
+                // cushion and the legs dangling straight down, then clip just below
+                // the floor — the feet stop a touch above the ground instead of the
+                // whole lower body vanishing at the hip (tub-style).
+                const cy = seatY + 0.42 * HcPct;
+                const floorLine = seatItem.y - HcPct * 0.015;
+                const clipB = Math.max(0, Math.round(((cy - floorLine) / HcPct) * 100));
                 return (
                   <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
                     style={{ position: 'absolute', left: `${seatItem.x}%`, top: `${cy}%`, width: 'max-content', transform: 'translate(-50%,-100%)', zIndex: Math.round(seatItem.y * 10) + 6, touchAction: 'none', cursor: 'grab' }}>
                     {bubble}
-                    <div style={{ animation: `ttbob 3s ease-in-out ${i * 0.3}s infinite alternate`, clipPath: `inset(0 0 ${clipB}% 0)`, WebkitClipPath: `inset(0 0 ${clipB}% 0)`, filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
+                    <div style={{ animation: `ttbob 3s ease-in-out ${i * 0.3}s infinite alternate`, clipPath: clipB ? `inset(0 0 ${clipB}% 0)` : 'none', WebkitClipPath: clipB ? `inset(0 0 ${clipB}% 0)` : 'none', filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
                       <CharSprite c={c} size={cs} />
                     </div>
                   </div>
