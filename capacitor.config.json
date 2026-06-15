@@ -1,0 +1,20 @@
+{
+  "appId": "com.bubbletown.app",
+  "appName": "Bubble Town",
+  "webDir": "dist",
+  "backgroundColor": "#211A40",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#211A40",
+    "limitsNavigationsToAppBoundDomains": true
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 500,
+      "launchAutoHide": false,
+      "backgroundColor": "#211A40",
+      "showSpinner": false,
+      "iosSpinnerStyle": "small"
+    }
+  }
+}
