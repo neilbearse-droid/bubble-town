@@ -6,7 +6,7 @@
 //
 // Plain module (no Vite `import.meta.glob`) so Node scripts — e.g. the data
 // integrity check — can import the data layer without a build step.
-export const CHAR_SKIN_KEYS = ['tan'];
+export const CHAR_SKIN_KEYS = ['tan', 'fair', 'olive', 'caramel', 'deep'];
 export const CHAR_HAIR_KEYS = ['tousle', 'bob', 'bunny', 'bunnygold', 'blonde', 'lime', 'ponytail', 'pigtails', 'blackmessy'];
 // HATS are the topmost layer and are worn on a BALD head — wearing one hides
 // the hair entirely (see CharSprite). Optional slot: a friend may wear none.
