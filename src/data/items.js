@@ -16,8 +16,8 @@ const CHAR_BAND = [66, 98];
 
 // svg furniture gets wired in below (chunk C); emoji props carry the rest
 const ITEMS = {
-  sofa: { n: 'Sofa', s: 200, r: 0.59, zone: 'floor', c: 'living', svg: 'Sofa' },
-  armchair: { n: 'Armchair', s: 130, r: 0.93, zone: 'floor', c: 'living', svg: 'Armchair' },
+  sofa: { n: 'Sofa', s: 200, r: 0.59, zone: 'floor', c: 'living', svg: 'Sofa', seat: { pose: 'sit', top: 0.38, half: 0.38, lie: true } },
+  armchair: { n: 'Armchair', s: 130, r: 0.93, zone: 'floor', c: 'living', svg: 'Armchair', seat: { pose: 'sit', top: 0.40, half: 0.28 } },
   lounge: { n: 'Lounge', e: '🪑', s: 112, r: 1.0, zone: 'floor', c: 'living' },
   tv: { n: 'TV', s: 150, r: 0.72, zone: 'floor', c: 'living', svg: 'TV', interactive: { glow: '#8FD0FF', onImg: 'tv_on' } },
   shelf: { n: 'Bookshelf', s: 140, r: 1.33, zone: 'floor', c: 'living', svg: 'Shelf', surf: { top: 0.96, half: 0.40 } },
@@ -27,7 +27,7 @@ const ITEMS = {
   frame: { e: '🖼️', s: 64, zone: 'wall', c: 'living', svg: 'Frame', r: 0.86 },
   clock: { e: '🕰️', s: 56, zone: 'wall', c: 'living', svg: 'Clock' },
   candle: { e: '🕯️', s: 40, zone: 'floor', c: 'living', interactive: { glow: '#FFC56B' } },
-  bed: { n: 'Bed', s: 220, r: 0.62, zone: 'floor', c: 'bedbath', svg: 'Bed', surf: { top: 0.50, half: 0.42 } },
+  bed: { n: 'Bed', s: 220, r: 0.62, zone: 'floor', c: 'bedbath', svg: 'Bed', surf: { top: 0.50, half: 0.42 }, seat: { pose: 'lie', top: 0.44, half: 0.44 } },
   mirror: { e: '🪞', s: 70, zone: 'wall', c: 'bedbath' },
   teddy: { e: '🧸', s: 56, zone: 'floor', c: 'bedbath', svg: 'Teddy' },
   doll: { e: '🪆', s: 48, zone: 'floor', c: 'bedbath' },
@@ -37,7 +37,7 @@ const ITEMS = {
   toilet: { e: '🚽', s: 80, zone: 'floor', c: 'bedbath' },
   soap: { e: '🧼', s: 38, zone: 'floor', c: 'bedbath' },
   table: { n: 'Table', s: 160, r: 0.7, zone: 'floor', c: 'kitchen', svg: 'Table', surf: { top: 0.72, half: 0.40 } },
-  chair: { n: 'Chair', s: 90, r: 1.44, zone: 'floor', c: 'kitchen', svg: 'Chair' },
+  chair: { n: 'Chair', s: 90, r: 1.44, zone: 'floor', c: 'kitchen', svg: 'Chair', seat: { pose: 'sit', top: 0.33, half: 0.26 } },
   pot: { e: '🍲', s: 52, zone: 'floor', c: 'kitchen', food: true },
   pan: { e: '🍳', s: 54, zone: 'floor', c: 'kitchen', food: true },
   kettle: { e: '🫖', s: 50, zone: 'floor', c: 'kitchen', food: true },

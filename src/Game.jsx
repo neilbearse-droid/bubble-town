@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { CIMG, IMG } from './assets/images.js';
 import { Sw } from './components/charsvg.jsx';
 import { CharSprite } from './components/charsprite.jsx';
@@ -16,6 +16,7 @@ import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
 
 function Game() {
   const [st, setSt] = useState(null);
+  const [vp, setVp] = useState({ w: 0, h: 0 }); // measured viewport size (reactive, so seat/tub positions stay correct)
   const [view, setView] = useState('building');
   const [bid, setBid] = useState('home');
   const [mode, setMode] = useState('items');
@@ -135,6 +136,20 @@ function Game() {
     }, 700);
   }, [st]);
 
+  // Keep the measured viewport size in state so render math that depends on it
+  // (seating a character on furniture, tubs) is correct on the very first paint —
+  // e.g. when loading a save with a friend already sitting — not just after a
+  // later re-render. Also tracks resizes / orientation changes.
+  const sceneMounted = st != null;
+  useLayoutEffect(() => {
+    const el = vpRef.current; if (!el) return;
+    const measure = () => { const r = el.getBoundingClientRect(); setVp((v) => (v.w === r.width && v.h === r.height ? v : { w: r.width, h: r.height })); };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure); ro.observe(el);
+    return () => ro.disconnect();
+  }, [sceneMounted]);
+
   const soundOn = !st || st.sound !== false;
   useEffect(() => { setSoundOn(soundOn); }, [soundOn]);
   useEffect(() => {
@@ -173,6 +188,8 @@ function Game() {
   const GROUND_Z = 500;
   const itemZ = (key, yref, on) => Math.round(yref * 10) + (on ? 2 : 0) - ((ITEMS[key] && ITEMS[key].layer) === 'ground' ? GROUND_Z : 0);
   const surfTopY = (surf, vpH) => { const d = ITEMS[surf.key]; const ph = d.s * (d.r || 1); return surf.y - (d.surf.top * ph) / vpH * 100; };
+  // Y (in vh%) of a seat/mattress surface a character rests on when using furniture.
+  const seatTopY = (it, vpH) => { const d = ITEMS[it.key]; const ph = d.s * (d.r || 1); return it.y - (d.seat.top * ph) / vpH * 100; };
   const findSurface = (x, y, draggedId) => {
     if (!vpRef.current || !stRef.current) return null;
     const r = vpRef.current.getBoundingClientRect();
@@ -205,6 +222,27 @@ function Game() {
     }
     return null;
   };
+  // Is the drop point over a sittable/liable piece of furniture (chair, sofa, bed)?
+  // Forgiving: snaps to the NEAREST seat within a generous radius so kids don't
+  // have to hit a small chair exactly.
+  const seatAt = (x, y) => {
+    if (!vpRef.current || !stRef.current) return null;
+    const r = vpRef.current.getBoundingClientRect();
+    const sceneW = r.width * nRooms();
+    const arr = (stRef.current.buildings[bid].floors[floorRef.current] || {}).items || [];
+    let best = null, bestDx = 1e9;
+    for (const it of arr) {
+      const d = ITEMS[it.key];
+      if (!d || !d.seat) continue;
+      const halfW = Math.max((d.seat.half * d.s) / sceneW * 100, 6);
+      const top = seatTopY(it, r.height);
+      const dx = Math.abs(x - it.x);
+      if (dx <= halfW && y >= top - 22 && y <= it.y + 6 && dx < bestDx) {
+        bestDx = dx; best = { id: it.id, x: it.x, baseY: it.y, pose: d.seat.pose };
+      }
+    }
+    return best;
+  };
   const addItemOn = (key, surf) => {
     upd((c) => { c.buildings[bid].floors[floorRef.current].items.push({ id: uid(), key, x: surf.x, y: surf.y, flip: false, on: surf.id, ox: surf.x - surf.sx, by: surf.baseY }); });
     sfx('pop');
@@ -230,6 +268,9 @@ function Game() {
       if (it && ITEMS[it.key] && ITEMS[it.key].tub) { // friends climb out when the tub goes
         for (const ch of c.chars) if (ch.inTub === id) { delete ch.inTub; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
       }
+      if (it && ITEMS[it.key] && ITEMS[it.key].seat) { // friends stand up when their seat goes
+        for (const ch of c.chars) if (ch.seat === id) { delete ch.seat; delete ch.pose; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
+      }
       fs.items = arr.filter((t) => t.id !== id);
     });
     setSel(null);
@@ -240,20 +281,39 @@ function Game() {
   const toggleLit = (id) => { let on = false; upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === id); if (it) { it.lit = !it.lit; on = it.lit; } }); sfx(on ? 'pip' : 'pop'); };
   const placeChar = (id, x, y) => {
     const tub = tubAt(x, y);
+    const seat = tub ? null : seatAt(x, y);
     const ly = clamp(y, CHAR_BAND[0], CHAR_BAND[1]);
-    upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current; if (tub) { ch.inTub = tub.id; ch.x = tub.x; ch.y = tub.baseY; } else { delete ch.inTub; ch.x = x; ch.y = ly; } } });
-    if (tub) { sfx('pip'); relaxBurst(id); } else { puffAt(x, ly); sfx('pop'); }
+    upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current;
+      if (tub) { ch.inTub = tub.id; delete ch.seat; delete ch.pose; ch.x = tub.x; ch.y = tub.baseY; }
+      else if (seat) { ch.seat = seat.id; ch.pose = seat.pose; delete ch.inTub; ch.x = seat.x; ch.y = seat.baseY; }
+      else { delete ch.inTub; delete ch.seat; delete ch.pose; ch.x = x; ch.y = ly; } } });
+    if (tub) { sfx('pip'); relaxBurst(id); } else if (seat) { sfx('pip'); } else { puffAt(x, ly); sfx('pop'); }
   };
-  // Drop a friend that's already in the building (handles climbing into the tub).
+  // Tap a friend on a lie-capable seat (sofa) to flip sit <-> lie. Returns true
+  // if it handled the tap (so the caller skips the normal select/react).
+  const togglePose = (id) => {
+    const ch = ((stRef.current && stRef.current.chars) || []).find((t) => t.id === id);
+    if (!ch || !ch.seat) return false;
+    const it = ((stRef.current.buildings[bid].floors[floorRef.current] || {}).items || []).find((t) => t.id === ch.seat);
+    const sd = it && ITEMS[it.key] && ITEMS[it.key].seat;
+    if (!sd || !sd.lie) return false;
+    upd((c) => { const t = c.chars.find((q) => q.id === id); if (t) t.pose = t.pose === 'lie' ? 'sit' : 'lie'; });
+    sfx('pip');
+    return true;
+  };
+  // Drop a friend that's already in the building (handles climbing into the tub or onto a seat).
   const settleChar = (id, x, y) => {
     const tub = tubAt(x, y);
+    const seat = tub ? null : seatAt(x, y);
     let entered = false;
     upd((c) => {
       const ch = c.chars.find((t) => t.id === id); if (!ch) return;
-      if (tub) { entered = ch.inTub !== tub.id; ch.inTub = tub.id; ch.x = tub.x; ch.y = tub.baseY; }
-      else { delete ch.inTub; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
+      if (tub) { entered = ch.inTub !== tub.id; ch.inTub = tub.id; delete ch.seat; delete ch.pose; ch.x = tub.x; ch.y = tub.baseY; }
+      else if (seat) { entered = ch.seat !== seat.id; ch.seat = seat.id; ch.pose = seat.pose; delete ch.inTub; ch.x = seat.x; ch.y = seat.baseY; }
+      else { delete ch.inTub; delete ch.seat; delete ch.pose; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
     });
     if (tub) { sfx('pip'); if (entered) relaxBurst(id); }
+    else if (seat) { sfx('pip'); }
     else setTimeout(() => puffAt(x, clamp(y, CHAR_BAND[0], CHAR_BAND[1])), 230);
   };
   const relaxBurst = (id) => {
@@ -531,6 +591,9 @@ function Game() {
       } else if (d.kind === 'char') {
         if (inT) { stowChar(d.id); return; }
         if (!d.moved) {
+          // Tapping a friend on a sofa (or other lie-capable seat) flips between
+          // sitting up and lying down. Otherwise it's a normal select/react.
+          if (togglePose(d.id)) return;
           setSel((s) => {
             const same = s && s.t === 'char' && s.id === d.id;
             if (!same) reactChar(d.id);
@@ -590,8 +653,8 @@ function Game() {
   const copen = b.copen || {};
   const cpos = b.cpos || {};
   const packTotal = Object.values(st.backpack).reduce((a, v) => a + v, 0);
-  const vpW = vpRef.current ? vpRef.current.getBoundingClientRect().width : 1;
-  const vpH = vpRef.current ? vpRef.current.getBoundingClientRect().height : 1;
+  const vpW = vp.w || (vpRef.current && vpRef.current.getBoundingClientRect().width) || 1;
+  const vpH = vp.h || (vpRef.current && vpRef.current.getBoundingClientRect().height) || 1;
   const curRoom = clamp(Math.round(-pan / vpW), 0, n - 1);
 
   let chip = null;
@@ -921,6 +984,46 @@ function Game() {
                         <div style={{ width: 0, height: 0, margin: '0 auto', borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '8px solid #2E2059' }} />
                       </div>
                     )}
+                    <div style={{ animation: `ttbob 3s ease-in-out ${i * 0.3}s infinite alternate`, clipPath: `inset(0 0 ${clipB}% 0)`, WebkitClipPath: `inset(0 0 ${clipB}% 0)`, filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
+                      <CharSprite c={c} size={cs} />
+                    </div>
+                  </div>
+                );
+              }
+              // Sitting on a chair/sofa, or lying in a bed/on the sofa.
+              const seatItem = (c.seat && !isDrag) ? b.items.find((t) => t.id === c.seat && ITEMS[t.key] && ITEMS[t.key].seat) : null;
+              if (seatItem) {
+                const sd = ITEMS[seatItem.key].seat;
+                const pose = c.pose || sd.pose;
+                const seatY = seatTopY(seatItem, vpH);
+                const bubble = waving && (
+                  <div className="absolute" style={{ left: '50%', top: -4, transform: 'translate(-50%,-100%)', zIndex: 8, animation: 'ttpop .25s ease' }}>
+                    <div style={{ background: '#2E2059', color: '#ECE7FA', fontWeight: 700, fontSize: 13, padding: '6px 12px', borderRadius: 16, boxShadow: '0 6px 14px rgba(60,40,20,.22)', whiteSpace: 'nowrap' }}>{reacts[c.id]}</div>
+                    <div style={{ width: 0, height: 0, margin: '0 auto', borderLeft: '7px solid transparent', borderRight: '7px solid transparent', borderTop: '8px solid #2E2059' }} />
+                  </div>
+                );
+                if (pose === 'lie') {
+                  const cs = 120;
+                  const cy = seatY - (cs * 0.14) / vpH * 100;
+                  const head = seatItem.flip ? 90 : -90;
+                  return (
+                    <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
+                      style={{ position: 'absolute', left: `${seatItem.x}%`, top: `${cy}%`, width: 'max-content', transform: 'translate(-50%,-50%)', zIndex: Math.round(seatItem.y * 10) + 6, touchAction: 'none', cursor: 'grab' }}>
+                      {bubble}
+                      <div style={{ transform: `rotate(${head}deg)`, filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
+                        <CharSprite c={c} size={cs} />
+                      </div>
+                    </div>
+                  );
+                }
+                const cs = 118, clipFrac = 0.24;
+                const HcPct = (cs * CHAR_BASE_ASPECT) / vpH * 100;
+                const cy = seatY + clipFrac * HcPct;
+                const clipB = Math.round(clipFrac * 100);
+                return (
+                  <div key={c.id} onPointerDown={(e) => startDrag(e, { kind: 'char', id: c.id })}
+                    style={{ position: 'absolute', left: `${seatItem.x}%`, top: `${cy}%`, width: 'max-content', transform: 'translate(-50%,-100%)', zIndex: Math.round(seatItem.y * 10) + 6, touchAction: 'none', cursor: 'grab' }}>
+                    {bubble}
                     <div style={{ animation: `ttbob 3s ease-in-out ${i * 0.3}s infinite alternate`, clipPath: `inset(0 0 ${clipB}% 0)`, WebkitClipPath: `inset(0 0 ${clipB}% 0)`, filter: isSel ? 'drop-shadow(0 0 8px #4D96FF)' : 'none' }}>
                       <CharSprite c={c} size={cs} />
                     </div>
