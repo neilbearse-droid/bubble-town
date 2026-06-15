@@ -15,7 +15,7 @@ export const CHAR_TOP_KEYS = ['tank', 'red', 'poptee', 'unicorn', 'band', 'the19
 // OVERSIZED tops hang OVER the pants (untucked); everything else is "fitted" and
 // tucks in (the pant waistband sits over the shirt hem). Tank is fitted here.
 export const CHAR_TOP_OVERSIZED = ['red', 'poptee', 'unicorn', 'band', 'the1975', 'u2', 'hoodie'];
-export const CHAR_BOTTOM_KEYS = ['flares', 'sparkle', 'boho', 'plaid', 'shorts', 'stars', 'leggings', 'sweats', 'plaidpants'];
+export const CHAR_BOTTOM_KEYS = ['flares', 'sparkle', 'boho', 'plaid', 'shorts', 'stars', 'leggings', 'sweats', 'plaidpants', 'flamingo', 'rippedjeans', 'whitefox', 'yellowsweats'];
 // WIDE/flared pants drape OVER the shoe (boot-cut look); everything else is
 // "tight" and the shoe sits on top of the cuff (skinny-jeans-into-sneakers).
 // Shorts don't reach the shoe, so they're moot.
