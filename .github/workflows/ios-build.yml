@@ -1,0 +1,63 @@
+name: iOS build
+
+# Proves the native iOS app compiles (unsigned simulator build). Runs only when
+# iOS-relevant files change (not on every wardrobe/asset commit) plus on demand.
+# macOS runners cost 10x minutes, so the path filter keeps it lean.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ios/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'src/lib/native.js'
+      - 'src/lib/storage.js'
+      - 'src/main.jsx'
+      - '.github/workflows/ios-build.yml'
+  workflow_dispatch:
+
+# One build per ref; a newer push supersedes an in-flight run.
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web + sync iOS
+        run: |
+          npm run build
+          npx cap sync ios
+
+      - name: Resolve Swift Package dependencies
+        working-directory: ios/App
+        run: xcodebuild -project App.xcodeproj -scheme App -resolvePackageDependencies
+
+      - name: Build app (iOS Simulator, unsigned)
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            build
