@@ -23,6 +23,7 @@ const SAVE_TS_KEY = 'tt_save_ts';     // last local save time, to pick newer of 
 function Game() {
   const [st, setSt] = useState(null);
   const [showAccount, setShowAccount] = useState(false);
+  const [visiting, setVisiting] = useState(null); // { id, name } when viewing a friend's world read-only
   const [badge, setBadge] = useState(() => { try { return JSON.parse(localStorage.getItem(BADGE_KEY) || 'null'); } catch { return null; } });
   const applyBadge = (b) => { setBadge(b); try { b ? localStorage.setItem(BADGE_KEY, JSON.stringify(b)) : localStorage.removeItem(BADGE_KEY); } catch { /* ignore */ } };
   const [vp, setVp] = useState({ w: 0, h: 0 }); // measured viewport size (reactive, so seat/tub positions stay correct)
@@ -66,6 +67,8 @@ function Game() {
   const stRef = useRef(null); stRef.current = st;
   const signedInRef = useRef(false);   // are we syncing to a logged-in account?
   const cloudSyncedRef = useRef(false); // one-time per session: claimed by login/signup or the startup auto-sync
+  const roRef = useRef(false);          // read-only: true while visiting a friend's world (gates all editing + autosave)
+  const ownStRef = useRef(null);        // snapshot of the player's own world, restored on Leave
   const floorRef = useRef(0); floorRef.current = curFloor;
 
   // ---- load + migrate (list first so missing keys never throw) ----
@@ -136,6 +139,7 @@ function Game() {
   // ---- autosave ----
   useEffect(() => {
     if (!st) return;
+    if (roRef.current) return; // visiting a friend's world — never persist it as ours
     if (firstLoad.current) { firstLoad.current = false; return; }
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -165,6 +169,7 @@ function Game() {
   };
   // On app start with a saved session: keep whichever of local/cloud is newer.
   const autoSyncCloud = async () => {
+    if (roRef.current) return;
     try {
       const m = await import('./lib/account.js');
       const u = await m.currentUser();
@@ -185,6 +190,27 @@ function Game() {
     if (ev === 'signup') { signedInRef.current = true; pushCloud(); }
     else if (ev === 'login') { signedInRef.current = true; pullCloud(); }
     else if (ev === 'logout') { signedInRef.current = false; }
+  };
+
+  // ---- visiting a friend's world (read-only) ----
+  const visitFriend = async (friend) => {
+    try {
+      const m = await import('./lib/account.js');
+      const w = await m.loadFriendWorld(friend.id);
+      if (!w || !w.state) { setSaveStat(`${friend.screenname} hasn't decorated yet`); setTimeout(() => setSaveStat(''), 2200); return; }
+      ownStRef.current = stRef.current; // remember my own world
+      roRef.current = true;             // block autosave BEFORE swapping the state in
+      setVisiting({ id: friend.id, name: friend.screenname });
+      setShowAccount(false); setSel(null); setDockOpen(false);
+      setSt(clone(w.state));            // render their world
+      setView('map'); setBid('home'); setPan(0); setCurFloor(0);
+    } catch { setSaveStat('Could not load that world'); setTimeout(() => setSaveStat(''), 2200); }
+  };
+  const leaveVisit = () => {
+    roRef.current = false;
+    setVisiting(null); setSel(null); setDockOpen(false);
+    if (ownStRef.current) setSt(ownStRef.current);
+    setView('map'); setBid('home'); setPan(0); setCurFloor(0);
   };
 
   useEffect(() => {
@@ -408,7 +434,7 @@ function Game() {
   );
   const enterBuilding = (id) => {
     setBid(id); setView('building'); setMode('items'); setDockOpen(false); setSel(null); setPan(0); setCurFloor(0);
-    upd((c) => { c.buildings[id].floors.forEach((f) => { f.looted = {}; f.copen = {}; }); }); // secrets restock & re-close every visit
+    if (!roRef.current) upd((c) => { c.buildings[id].floors.forEach((f) => { f.looted = {}; f.copen = {}; }); }); // secrets restock & re-close every visit (not when visiting a friend)
   };
   const resetWorld = async () => {
     try {
@@ -517,6 +543,7 @@ function Game() {
   // ---- pointer system: pan, drag, tap ----
   const startDrag = (e, payload) => {
     e.preventDefault(); e.stopPropagation();
+    if (roRef.current && payload.kind !== 'pan') return; // visiting: look around (pan) only, no editing
     if (payload.kind !== 'pan' && mode === 'paint') return;
     dragRef.current = { ...payload, sx: e.clientX, sy: e.clientY, startPan: panRef.current, moved: false, anyMove: false, zd: false };
     setGhost({ x: e.clientX, y: e.clientY });
@@ -820,7 +847,7 @@ function Game() {
               );
             }
             return (
-              <button key={si} onClick={() => !constructing && setBuildSheet(sp.plot)} className="absolute flex flex-col items-center active:scale-95" style={{ left: `${sp.x}%`, top: `${sp.y}%`, transform: 'translate(-50%,-100%)', zIndex: 10 }}>
+              <button key={si} onClick={() => !constructing && !visiting && setBuildSheet(sp.plot)} className="absolute flex flex-col items-center active:scale-95" style={{ left: `${sp.x}%`, top: `${sp.y}%`, transform: 'translate(-50%,-100%)', zIndex: 10 }}>
                 <div className="grid place-items-center" style={{ width: 96, height: 74, borderRadius: 18, border: '3px dashed rgba(255,255,255,.85)', background: 'rgba(255,255,255,.2)' }}>
                   <div className="w-10 h-10 rounded-full grid place-items-center shadow" style={{ background: 'rgba(36,27,70,0.88)', color: '#ECE7FA', animation: 'ttbob 1.6s ease-in-out infinite alternate' }}><Plus size={20} /></div>
                 </div>
@@ -1173,7 +1200,7 @@ function Game() {
         ) : <div style={{ width: 64 }} />}
         <div className="flex-1 flex flex-col items-center gap-1">
           <div className="rounded-full px-4 py-1.5 font-bold text-sm shadow-lg truncate" style={{ background: 'rgba(36,27,70,0.86)', color: '#ECE7FA', maxWidth: '70vw' }}>
-            {view === 'map' ? '🌈 Tiny Town' : `${bdef.e} ${fdef.rooms[curRoom].name}`}
+            {visiting ? `👋 ${visiting.name}'s ${view === 'map' ? 'town' : 'room'}` : (view === 'map' ? '🌈 Tiny Town' : `${bdef.e} ${fdef.rooms[curRoom].name}`)}
           </div>
           {st.event && (
             <div className="rounded-full px-3 py-1 text-[11px] font-bold shadow" style={{ background: EVENTS[st.event].accent, color: '#fff' }}>{EVENTS[st.event].banner}</div>
@@ -1188,17 +1215,25 @@ function Game() {
         </div>
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-semibold" style={{ color: '#6FE7B7', textShadow: '0 1px 0 #fff' }}>{saveStat}</span>
-          {view === 'building' && (
-            <button onClick={() => upd((c) => { c.night = !c.night; })} className="pointer-events-auto rounded-full shadow-lg active:scale-95 grid place-items-center" style={{ background: 'rgba(36,27,70,0.86)', width: 34, height: 34 }}>
-              <span style={{ fontSize: 16, lineHeight: 1 }}>{night ? '☀️' : '🌙'}</span>
+          {visiting ? (
+            <button onClick={leaveVisit} className="pointer-events-auto rounded-full shadow-lg active:scale-95 font-bold" style={{ background: 'linear-gradient(#A24BFF,#FF6FB5)', color: '#fff', padding: '7px 14px', fontSize: 13 }}>
+              👋 Leave
             </button>
+          ) : (
+            <>
+              {view === 'building' && (
+                <button onClick={() => upd((c) => { c.night = !c.night; })} className="pointer-events-auto rounded-full shadow-lg active:scale-95 grid place-items-center" style={{ background: 'rgba(36,27,70,0.86)', width: 34, height: 34 }}>
+                  <span style={{ fontSize: 16, lineHeight: 1 }}>{night ? '☀️' : '🌙'}</span>
+                </button>
+              )}
+              <button onClick={() => setShowAccount(true)} aria-label="Account" className="pointer-events-auto rounded-full shadow-lg active:scale-95 grid place-items-center overflow-hidden" style={{ background: 'rgba(36,27,70,0.86)', width: 34, height: 34, padding: 0 }}>
+                {badge?.avatar_url ? <img src={badge.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 15, lineHeight: 1 }}>👤</span>}
+              </button>
+              <button onClick={() => { setShowSettings(true); setResetArm(false); }} className="pointer-events-auto rounded-full p-2 shadow-lg active:scale-95" style={{ background: 'rgba(36,27,70,0.86)', color: '#ECE7FA' }}>
+                <Settings size={16} />
+              </button>
+            </>
           )}
-          <button onClick={() => setShowAccount(true)} aria-label="Account" className="pointer-events-auto rounded-full shadow-lg active:scale-95 grid place-items-center overflow-hidden" style={{ background: 'rgba(36,27,70,0.86)', width: 34, height: 34, padding: 0 }}>
-            {badge?.avatar_url ? <img src={badge.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 15, lineHeight: 1 }}>👤</span>}
-          </button>
-          <button onClick={() => { setShowSettings(true); setResetArm(false); }} className="pointer-events-auto rounded-full p-2 shadow-lg active:scale-95" style={{ background: 'rgba(36,27,70,0.86)', color: '#ECE7FA' }}>
-            <Settings size={16} />
-          </button>
         </div>
       </div>
 
@@ -1354,10 +1389,10 @@ function Game() {
             })}
           </div>
         </div>
-        <button onClick={() => setDockOpen((o) => !o)} className="pointer-events-auto absolute grid place-items-center active:scale-90"
+        {!visiting && <button onClick={() => setDockOpen((o) => !o)} className="pointer-events-auto absolute grid place-items-center active:scale-90"
           style={{ right: 16, bottom: 'max(10px, env(safe-area-inset-bottom))', width: 58, height: 58, borderRadius: '50%', background: '#A24BFF', color: '#FFFFFF', boxShadow: '0 10px 26px rgba(60,40,20,.4)', transform: dockOpen ? 'rotate(45deg)' : 'rotate(0deg)', transition: 'transform .25s ease', animation: packPulse && !dockOpen ? 'ttpulse .6s ease 2' : 'none' }}>
           <Plus size={30} strokeWidth={2.6} />
-        </button>
+        </button>}
         {packPulse && !dockOpen && (
           <div className="pointer-events-none absolute text-xs font-bold rounded-full px-2.5 py-1 shadow-lg" style={{ right: 14, bottom: 80, background: 'rgba(255,180,143,0.16)', color: '#FFE6BE', animation: 'ttpop .3s ease' }}>🎒 +1</div>
         )}
@@ -1408,7 +1443,7 @@ function Game() {
       {/* settings */}
       {showAccount && (
         <Suspense fallback={null}>
-          <Account onClose={() => setShowAccount(false)} chars={st.chars} onBadge={applyBadge} onAuthEvent={onAuthEvent} />
+          <Account onClose={() => setShowAccount(false)} chars={st.chars} onBadge={applyBadge} onAuthEvent={onAuthEvent} onVisit={visitFriend} />
         </Suspense>
       )}
 

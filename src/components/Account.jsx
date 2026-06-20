@@ -23,7 +23,7 @@ function buildOptions(chars) {
   return opts.slice(0, 6);
 }
 
-export default function Account({ onClose, chars = [], onBadge, onAuthEvent }) {
+export default function Account({ onClose, chars = [], onBadge, onAuthEvent, onVisit }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -132,7 +132,7 @@ export default function Account({ onClose, chars = [], onBadge, onAuthEvent }) {
           {optionRow((c) => setPhotoFromChar(c), -1)}
         </div>
 
-        <FriendsSection />
+        <FriendsSection onVisit={(f) => onVisit?.(f)} />
 
         {err && <div style={{ color: '#D6336C', fontSize: 13, marginTop: 10 }}>{err}</div>}
         {note && <div style={{ color: '#2B9348', fontSize: 13, marginTop: 8 }}>{note}</div>}
@@ -202,7 +202,7 @@ function Avatar({ url, size = 38 }) {
     {url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : null}
   </div>;
 }
-function FriendsSection() {
+function FriendsSection({ onVisit }) {
   const [friends, setFriends] = useState([]);
   const [reqs, setReqs] = useState([]);
   const [code, setCode] = useState('');
@@ -255,7 +255,7 @@ function FriendsSection() {
               <div key={f.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '6px 0' }}>
                 <Avatar url={f.avatar_url} />
                 <div style={{ flex: 1, fontWeight: 800, color: '#2E2059' }}>{f.screenname}</div>
-                {/* "Visit world" comes in Phase 3 */}
+                <button onClick={() => onVisit?.(f)} style={{ border: 'none', borderRadius: 10, padding: '7px 13px', background: 'linear-gradient(#A24BFF,#FF6FB5)', color: '#fff', fontWeight: 800, cursor: 'pointer' }}>Visit ›</button>
               </div>
             ))}
       </div>
