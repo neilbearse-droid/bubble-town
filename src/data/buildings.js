@@ -126,12 +126,31 @@ function freshFloor(id, i) {
   const fc = BUILDINGS[id].floors[i];
   return { rooms: fc.rooms.map((r) => ({ w: r.w, f: r.f })), looted: {}, items: (fc.items || []).map((t) => mk(t[0], t[1], t[2], t[3])) };
 }
+
+// Outdoor "floors": each interior floor gets one appended after all interiors —
+// the ground floor's is a YARD, upper floors' are BALCONIES. They reuse the whole
+// per-floor item machinery; only navigation + rendering know they're exteriors.
+export const EXTERIOR_ROOMS = 2; // outdoor scene width, in room-widths
+const EXT_ITEMS = {
+  yard: [['tree', 15, 96], ['flower', 27, 96.5], ['flower', 35, 96], ['bunny', 50, 95], ['plant', 73, 95], ['flower', 84, 96.5], ['flower', 90, 96]],
+  balcony: [['plant', 20, 95], ['flower', 30, 96], ['chair', 68, 95.5], ['lamp', 84, 95], ['flower', 76, 96]],
+};
+function freshExterior(id, i) {
+  const type = i === 0 ? 'yard' : 'balcony';
+  return {
+    exterior: true, type, of: i, looted: {},
+    rooms: Array.from({ length: EXTERIOR_ROOMS }, () => ({})),
+    items: EXT_ITEMS[type].map((t) => mk(t[0], t[1], t[2], t[3])),
+  };
+}
 function freshBuilding(id) {
-  return { floors: BUILDINGS[id].floors.map((_, i) => freshFloor(id, i)) };
+  const interiors = BUILDINGS[id].floors.map((_, i) => freshFloor(id, i));
+  const exteriors = BUILDINGS[id].floors.map((_, i) => freshExterior(id, i));
+  return { floors: [...interiors, ...exteriors] };
 }
 function defaultState() {
   return {
-    v: 5, buildingsV: 5,
+    v: 5, buildingsV: 6,
     sound: true, night: false, event: null,
     chars: [
       { id: uid(), name: 'Maya', skinKey: CHAR_SKIN_KEYS[0], hairKey: 'tousle', topKey: 'red', bottomKey: 'flares', shoesKey: 'white', building: 'home', floor: 0, x: 62, y: 95 },
@@ -152,4 +171,4 @@ function randomChar() {
   };
 }
 
-export { BUILDINGS, BUILDABLE_IDS, MAP_SPOTS, bRooms, bSecrets, mk, freshFloor, freshBuilding, defaultState, randomChar };
+export { BUILDINGS, BUILDABLE_IDS, MAP_SPOTS, bRooms, bSecrets, mk, freshFloor, freshExterior, freshBuilding, defaultState, randomChar };

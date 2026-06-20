@@ -7,7 +7,7 @@ import { CONTAINER_DEFS } from './components/containers.jsx';
 import { EXT, StairsSVG } from './components/exteriors.jsx';
 import { FURN, VARIANTS } from './components/furniture.jsx';
 import { Backpack, ChevronLeft, FlipHorizontal2, Paintbrush, Pencil, Plus, Settings, Shuffle, Sofa, Trash2, Users, X } from './components/icons.jsx';
-import { BUILDABLE_IDS, BUILDINGS, MAP_SPOTS, bRooms, bSecrets, defaultState, freshBuilding, randomChar } from './data/buildings.js';
+import { BUILDABLE_IDS, BUILDINGS, MAP_SPOTS, bRooms, bSecrets, defaultState, freshBuilding, freshExterior, EXTERIOR_ROOMS, randomChar } from './data/buildings.js';
 import { EVENTS } from './data/events.js';
 import { BAND, CATS, CHAR_BAND, FLOORS, ITEMS, LOOT_KEYS, WALLS, floorS, wallS } from './data/items.js';
 import { setSoundOn, sfx, resumeAudio } from './lib/sound.js';
@@ -20,6 +20,19 @@ const Account = lazy(() => import('./components/Account.jsx'));
 const NoteComposer = lazy(() => import('./components/NoteComposer.jsx'));
 const BADGE_KEY = 'tt_account_badge'; // tiny cached {avatar_url, screenname} so the button shows the avatar without loading Supabase
 const SAVE_TS_KEY = 'tt_save_ts';     // last local save time, to pick newer of local/cloud on restart
+
+// Append the outdoor floors (yard/balcony) to any world saved before they existed.
+// Idempotent — runs on every load path (local + cloud) so the 🚪 door always works.
+function ensureExteriors(s) {
+  if (!s || !s.buildings) return s;
+  Object.entries(s.buildings).forEach(([bid2, bld]) => {
+    const K = BUILDINGS[bid2] ? BUILDINGS[bid2].floors.length : 0;
+    if (K && bld.floors && bld.floors.length === K) {
+      for (let i = 0; i < K; i++) bld.floors.push(freshExterior(bid2, i));
+    }
+  });
+  return s;
+}
 
 function Game() {
   const [st, setSt] = useState(null);
@@ -115,6 +128,7 @@ function Game() {
               setSt(ns); return;
             }
             p.plots.forEach((pid) => { if (pid && !p.buildings[pid]) p.buildings[pid] = freshBuilding(pid); });
+            ensureExteriors(p);
             setSt(p); return;
           }
         } catch (e) { /* fall through to fresh */ }
@@ -166,7 +180,7 @@ function Game() {
     try {
       const m = await import('./lib/account.js');
       const cloud = await m.loadWorld();
-      if (cloud && cloud.state) { setSt(clone(cloud.state)); localStorage.setItem(SAVE_TS_KEY, String(Date.parse(cloud.updated_at) || Date.now())); }
+      if (cloud && cloud.state) { setSt(ensureExteriors(clone(cloud.state))); localStorage.setItem(SAVE_TS_KEY, String(Date.parse(cloud.updated_at) || Date.now())); }
       else await pushCloud();
     } catch { /* ignore */ }
   };
@@ -182,7 +196,7 @@ function Game() {
       const cloud = await m.loadWorld();
       const localTs = Number(localStorage.getItem(SAVE_TS_KEY) || 0);
       const cloudTs = cloud ? Date.parse(cloud.updated_at) : 0;
-      if (cloud && cloud.state && cloudTs > localTs + 2000) { setSt(clone(cloud.state)); localStorage.setItem(SAVE_TS_KEY, String(cloudTs)); }
+      if (cloud && cloud.state && cloudTs > localTs + 2000) { setSt(ensureExteriors(clone(cloud.state))); localStorage.setItem(SAVE_TS_KEY, String(cloudTs)); }
       else await pushCloud();
     } catch { /* ignore */ }
   };
@@ -206,7 +220,7 @@ function Game() {
       roRef.current = true;             // block autosave BEFORE swapping the state in
       setVisiting({ id: friend.id, name: friend.screenname });
       setShowAccount(false); setSel(null); setDockOpen(false);
-      setSt(clone(w.state));            // render their world
+      setSt(ensureExteriors(clone(w.state))); // render their world
       setView('map'); setBid('home'); setPan(0); setCurFloor(0);
     } catch { setSaveStat('Could not load that world'); setTimeout(() => setSaveStat(''), 2200); }
   };
@@ -457,7 +471,8 @@ function Game() {
   };
   const enterBuildingLite = (id) => { setBid(id); setView('building'); setMode('items'); setSel(null); setPan(0); setCurFloor(0); };
   const changeFloor = (f) => {
-    if (f < 0 || f >= BUILDINGS[bid].floors.length || f === curFloor) return;
+    const total = (stRef.current && stRef.current.buildings[bid].floors.length) || BUILDINGS[bid].floors.length;
+    if (f < 0 || f >= total || f === curFloor) return;
     setFloorDir(f > curFloor ? 1 : -1);
     setCurFloor(f); setPan(0); setSel(null); setDockOpen(false); sfx('pip');
   };
@@ -533,7 +548,7 @@ function Game() {
   };
 
   // ---- world math ----
-  const nRooms = () => BUILDINGS[bid].floors[floorRef.current].rooms.length;
+  const nRooms = () => { const f = stRef.current && stRef.current.buildings[bid].floors[floorRef.current]; return (f && f.rooms && f.rooms.length) || 1; };
   const worldFromEvent = (e) => {
     const r = vpRef.current.getBoundingClientRect();
     const sceneW = r.width * nRooms();
@@ -736,8 +751,11 @@ function Game() {
   }
 
   const bdef = BUILDINGS[bid];
-  const fdef = bdef.floors[curFloor] || bdef.floors[0];
+  const intCount = bdef.floors.length; // interior floors (the static building def)
   const b = st.buildings[bid].floors[curFloor] || st.buildings[bid].floors[0];
+  const isExt = !!(b && b.exterior);
+  const extType = isExt ? (b.type || (curFloor - intCount === 0 ? 'yard' : 'balcony')) : null;
+  const fdef = isExt ? { rooms: b.rooms || [], containers: [], exterior: true } : (bdef.floors[curFloor] || bdef.floors[0]);
   const n = fdef.rooms.length;
   const placedChars = st.chars.filter((c) => c.building === bid && (c.floor || 0) === curFloor);
   const night = !!(st && st.night);
@@ -932,6 +950,8 @@ function Game() {
           {/* the scene: n rooms wide, swipe to pan */}
           <div key={curFloor} className="absolute inset-0" style={{ animation: `${floorDir > 0 ? 'ttflrUp' : 'ttflrDown'} .42s cubic-bezier(.25,.9,.3,1)` }}>
           <div style={{ position: 'absolute', top: 0, bottom: 0, left: 0, width: `${n * 100}%`, transform: `translateX(${pan}px)` }}>
+            {/* ── interior backdrop (rooms, walls, stairs) ── */}
+            {!isExt && (<>
             {/* room slices */}
             {fdef.rooms.map((rdef, i) => {
               const rs = b.rooms[i] || {};
@@ -991,6 +1011,34 @@ function Game() {
                 </div>
               </div>
             ))}
+            </>)}
+
+            {/* ── exterior backdrop (yard / balcony) ── */}
+            {isExt && (<>
+              <div className="absolute inset-0" style={{ background: extType === 'balcony' ? 'linear-gradient(180deg,#7FB6EE,#C3E6FF 62%)' : 'linear-gradient(180deg,#8AD0FF,#D6F1FF 62%)' }} />
+              <div className="absolute" style={{ left: '6%', top: '9%', width: 64, height: 64, borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%,#FFF6CC,#FFDE63)', boxShadow: '0 0 36px rgba(255,222,99,.6)' }} />
+              {[[30, 15, 1], [64, 22, .85], [83, 11, .7]].map(([cx, cy, s], k) => (
+                <div key={k} className="absolute" style={{ left: `${cx}%`, top: `${cy}%`, width: 70 * s, height: 24 * s, borderRadius: 24, background: 'rgba(255,255,255,.92)', boxShadow: `${20 * s}px ${5 * s}px 0 rgba(255,255,255,.9), ${-18 * s}px ${3 * s}px 0 rgba(255,255,255,.82)` }} />
+              ))}
+              {extType === 'balcony' && (
+                <svg className="absolute inset-x-0" style={{ bottom: '40%' }} width="100%" height="64" viewBox="0 0 220 32" preserveAspectRatio="none">
+                  {[6, 30, 52, 80, 104, 132, 158, 186, 206].map((rx, k) => (
+                    <g key={k}><rect x={rx} y={15} width="18" height="17" fill="rgba(116,134,176,.42)" /><polygon points={`${rx - 2},15 ${rx + 9},6 ${rx + 20},15`} fill="rgba(116,134,176,.5)" /></g>
+                  ))}
+                </svg>
+              )}
+              <div className="absolute inset-x-0 bottom-0 overflow-hidden" style={{ height: '40%', background: extType === 'balcony' ? 'linear-gradient(180deg,#CB9A66,#A06640)' : 'linear-gradient(180deg,#84C95C,#54A03C)' }}>
+                <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(255,255,255,.16), rgba(0,0,0,0) 30%, rgba(0,0,0,.13))' }} />
+                {extType === 'balcony'
+                  ? <div className="absolute inset-0" style={{ background: 'repeating-linear-gradient(90deg, rgba(0,0,0,.13) 0 2px, transparent 2px 48px)' }} />
+                  : <svg className="absolute inset-x-0 top-0" width="100%" height="20" viewBox="0 0 300 20" preserveAspectRatio="none">{Array.from({ length: 75 }).map((_, k) => <line key={k} x1={k * 4 + 1} y1="20" x2={k * 4 + 1} y2={6 + (k % 3) * 2} stroke="rgba(35,85,28,.5)" strokeWidth="1.3" vectorEffect="non-scaling-stroke" />)}</svg>}
+              </div>
+              <div className="absolute inset-x-0" style={{ bottom: '40%', height: 34, pointerEvents: 'none' }}>
+                <div className="absolute inset-x-0 bottom-0" style={{ height: 28, background: `repeating-linear-gradient(90deg, ${extType === 'balcony' ? bdef.frame : '#F3ECDE'} 0 9px, transparent 9px 30px)` }} />
+                <div className="absolute inset-x-0" style={{ bottom: 18, height: 7, background: extType === 'balcony' ? bdef.frame : '#F3ECDE', borderRadius: 3 }} />
+                <div className="absolute inset-x-0" style={{ bottom: 3, height: 6, background: extType === 'balcony' ? bdef.roof : '#E2D6C0' }} />
+              </div>
+            </>)}
 
             {/* landing spot (gravity preview) */}
             {dropShadow && (
@@ -1213,7 +1261,7 @@ function Game() {
         ) : <div style={{ width: 64 }} />}
         <div className="flex-1 flex flex-col items-center gap-1">
           <div className="rounded-full px-4 py-1.5 font-bold text-sm shadow-lg truncate" style={{ background: 'rgba(36,27,70,0.86)', color: '#ECE7FA', maxWidth: '70vw' }}>
-            {visiting ? `👋 ${visiting.name}'s ${view === 'map' ? 'town' : 'room'}` : (view === 'map' ? '🌈 Tiny Town' : `${bdef.e} ${fdef.rooms[curRoom].name}`)}
+            {visiting ? `👋 ${visiting.name}'s ${view === 'map' ? 'town' : 'place'}` : (view === 'map' ? '🌈 Tiny Town' : isExt ? `${bdef.e} ${extType === 'yard' ? '🌳 Yard' : '🪴 Balcony'}` : `${bdef.e} ${fdef.rooms[curRoom].name}`)}
           </div>
           {st.event && (
             <div className="rounded-full px-3 py-1 text-[11px] font-bold shadow" style={{ background: EVENTS[st.event].accent, color: '#fff' }}>{EVENTS[st.event].banner}</div>
@@ -1258,7 +1306,7 @@ function Game() {
         </div>
       </div>
 
-      {view === 'building' && bdef.floors.length > 1 && (
+      {view === 'building' && !isExt && bdef.floors.length > 1 && (
         <div className="absolute left-2 pointer-events-auto flex flex-col items-center gap-1 rounded-3xl p-1.5 shadow-lg" style={{ top: '50%', transform: 'translateY(-50%)', zIndex: 2000, background: 'rgba(36,27,70,0.9)' }}>
           <button disabled={curFloor >= bdef.floors.length - 1} onClick={() => changeFloor(curFloor + 1)} className="rounded-full grid place-items-center active:scale-90" style={{ width: 42, height: 42, background: curFloor >= bdef.floors.length - 1 ? 'rgba(255,255,255,0.06)' : '#A24BFF', color: '#fff', opacity: curFloor >= bdef.floors.length - 1 ? 0.45 : 1 }}>
             <span style={{ fontSize: 20, lineHeight: 1 }}>⬆️</span>
@@ -1268,6 +1316,15 @@ function Game() {
             <span style={{ fontSize: 20, lineHeight: 1 }}>⬇️</span>
           </button>
         </div>
+      )}
+
+      {/* go outside / come inside */}
+      {view === 'building' && (
+        <button onClick={() => (isExt ? changeFloor(curFloor - intCount) : changeFloor(intCount + curFloor))}
+          className="absolute left-2 pointer-events-auto rounded-2xl shadow-lg active:scale-95 flex items-center gap-1.5 font-bold"
+          style={{ bottom: 'max(16px, env(safe-area-inset-bottom))', zIndex: 2000, padding: '9px 13px', fontSize: 13, color: '#fff', background: isExt ? 'rgba(36,27,70,0.9)' : 'linear-gradient(#5FB0E6,#82CC86)' }}>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>🚪</span>{isExt ? 'Inside' : 'Outside'}
+        </button>
       )}
 
       {/* trash while dragging placed things */}
