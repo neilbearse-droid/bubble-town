@@ -784,6 +784,9 @@ function Game() {
         .no-sb::-webkit-scrollbar{display:none}.no-sb{scrollbar-width:none}
         @keyframes ttbob{from{transform:translateY(0)}to{transform:translateY(-6px)}}
         @keyframes ttpop{from{scale:.5;opacity:0}to{scale:1;opacity:1}}
+        @keyframes ttblink{0%,93%,98%,100%{opacity:0}94.5%,96.5%{opacity:1}}
+        .tt-blink{animation:ttblink 5.5s linear infinite}
+        @media (prefers-reduced-motion: reduce){.tt-blink{animation:none;opacity:0}}
         @keyframes tttwinkle{0%,100%{opacity:.35;transform:translateY(0) scale(.9)}50%{opacity:1;transform:translateY(-6px) scale(1.15)}}
         @keyframes ttglow{0%,100%{opacity:.7;transform:translate(-50%,-50%) scale(.92)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.06)}}
         @keyframes ttfloatbob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-7px) rotate(3deg)}}
