@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, lazy, Suspense } from 'react';
 import { CIMG, IMG } from './assets/images.js';
 import { Sw } from './components/charsvg.jsx';
 import { CharSprite } from './components/charsprite.jsx';
@@ -14,8 +14,16 @@ import { setSoundOn, sfx, resumeAudio } from './lib/sound.js';
 import { storage } from './lib/storage.js';
 import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
 
+// The social/account layer (and the Supabase SDK it pulls in) is lazy-loaded, so
+// players who never sign in don't download any of it — the game stays offline-first.
+const Account = lazy(() => import('./components/Account.jsx'));
+const BADGE_KEY = 'tt_account_badge'; // tiny cached {avatar_url, screenname} so the button shows the avatar without loading Supabase
+
 function Game() {
   const [st, setSt] = useState(null);
+  const [showAccount, setShowAccount] = useState(false);
+  const [badge, setBadge] = useState(() => { try { return JSON.parse(localStorage.getItem(BADGE_KEY) || 'null'); } catch { return null; } });
+  const applyBadge = (b) => { setBadge(b); try { b ? localStorage.setItem(BADGE_KEY, JSON.stringify(b)) : localStorage.removeItem(BADGE_KEY); } catch { /* ignore */ } };
   const [vp, setVp] = useState({ w: 0, h: 0 }); // measured viewport size (reactive, so seat/tub positions stay correct)
   const [view, setView] = useState('building');
   const [bid, setBid] = useState('home');
@@ -1138,6 +1146,9 @@ function Game() {
               <span style={{ fontSize: 16, lineHeight: 1 }}>{night ? '☀️' : '🌙'}</span>
             </button>
           )}
+          <button onClick={() => setShowAccount(true)} aria-label="Account" className="pointer-events-auto rounded-full shadow-lg active:scale-95 grid place-items-center overflow-hidden" style={{ background: 'rgba(36,27,70,0.86)', width: 34, height: 34, padding: 0 }}>
+            {badge?.avatar_url ? <img src={badge.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 15, lineHeight: 1 }}>👤</span>}
+          </button>
           <button onClick={() => { setShowSettings(true); setResetArm(false); }} className="pointer-events-auto rounded-full p-2 shadow-lg active:scale-95" style={{ background: 'rgba(36,27,70,0.86)', color: '#ECE7FA' }}>
             <Settings size={16} />
           </button>
@@ -1348,6 +1359,12 @@ function Game() {
       )}
 
       {/* settings */}
+      {showAccount && (
+        <Suspense fallback={null}>
+          <Account onClose={() => setShowAccount(false)} chars={st.chars} onBadge={applyBadge} />
+        </Suspense>
+      )}
+
       {showSettings && (
         <div className="fixed inset-0 grid place-items-center p-4" style={{ zIndex: 3000, background: 'rgba(60,40,30,.45)' }} onClick={() => setShowSettings(false)}>
           <div onClick={(e) => e.stopPropagation()} className="w-full rounded-3xl p-4" style={{ background: '#241B3C', maxWidth: 380 }}>
