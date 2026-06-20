@@ -11,6 +11,7 @@ import { BUILDABLE_IDS, BUILDINGS, MAP_SPOTS, bRooms, bSecrets, defaultState, fr
 import { EVENTS } from './data/events.js';
 import { BAND, CATS, CHAR_BAND, FLOORS, ITEMS, LOOT_KEYS, WALLS, floorS, wallS } from './data/items.js';
 import { setSoundOn, sfx, resumeAudio } from './lib/sound.js';
+import { BACKDROPS } from './data/backdrops.js';
 import { storage } from './lib/storage.js';
 import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
 
@@ -955,6 +956,12 @@ function Game() {
             {/* room slices */}
             {fdef.rooms.map((rdef, i) => {
               const rs = b.rooms[i] || {};
+              const bgImg = (BACKDROPS[bid] && BACKDROPS[bid].rooms && BACKDROPS[bid].rooms[`${curFloor}-${i}`]) || null;
+              if (bgImg) return (
+                <div key={i} className="absolute top-0 bottom-0 overflow-hidden" style={{ left: `${(i * 100) / n}%`, width: `${100 / n}%` }}>
+                  <img src={bgImg} alt="" draggable="false" className="absolute inset-0" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+                </div>
+              );
               return (
                 <div key={i} className="absolute top-0 bottom-0 overflow-hidden" style={{ left: `${(i * 100) / n}%`, width: `${100 / n}%`, ...wallS(rs.w) }}>
                   <div className="absolute inset-x-0 top-0" style={{ height: 22, background: 'rgba(255,255,255,.5)', boxShadow: '0 3px 0 rgba(0,0,0,.05)' }} />
@@ -1014,7 +1021,9 @@ function Game() {
             </>)}
 
             {/* ── exterior backdrop (yard / balcony) ── */}
-            {isExt && (<>
+            {isExt && ((BACKDROPS[bid] && BACKDROPS[bid][extType]) ? (
+              <img src={BACKDROPS[bid][extType]} alt="" draggable="false" className="absolute inset-0" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+            ) : (<>
               <div className="absolute inset-0" style={{ background: extType === 'balcony' ? 'linear-gradient(180deg,#7FB6EE,#C3E6FF 62%)' : 'linear-gradient(180deg,#8AD0FF,#D6F1FF 62%)' }} />
               <div className="absolute" style={{ left: '6%', top: '9%', width: 64, height: 64, borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%,#FFF6CC,#FFDE63)', boxShadow: '0 0 36px rgba(255,222,99,.6)' }} />
               {[[30, 15, 1], [64, 22, .85], [83, 11, .7]].map(([cx, cy, s], k) => (
@@ -1038,7 +1047,7 @@ function Game() {
                 <div className="absolute inset-x-0" style={{ bottom: 18, height: 7, background: extType === 'balcony' ? bdef.frame : '#F3ECDE', borderRadius: 3 }} />
                 <div className="absolute inset-x-0" style={{ bottom: 3, height: 6, background: extType === 'balcony' ? bdef.roof : '#E2D6C0' }} />
               </div>
-            </>)}
+            </>))}
 
             {/* landing spot (gravity preview) */}
             {dropShadow && (
