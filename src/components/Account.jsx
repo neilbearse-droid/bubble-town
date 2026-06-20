@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { signUp, signIn, signOut, currentUser, getProfile, onAuthChange, uploadAvatar,
-  listFriends, incomingRequests, sendFriendRequest, acceptRequest, declineRequest } from '../lib/account.js';
+  listFriends, incomingRequests, sendFriendRequest, acceptRequest, declineRequest,
+  inbox, markNotesRead } from '../lib/account.js';
 import { generateAvatarBlob, generateAvatarUrl } from '../lib/avatar.js';
+import { presetText } from '../lib/notes.js';
 import { randomChar } from '../data/buildings.js';
 
 // Palette (matches the game)
@@ -23,7 +25,7 @@ function buildOptions(chars) {
   return opts.slice(0, 6);
 }
 
-export default function Account({ onClose, chars = [], onBadge, onAuthEvent, onVisit }) {
+export default function Account({ onClose, chars = [], onBadge, onAuthEvent, onVisit, onUnread }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -132,6 +134,7 @@ export default function Account({ onClose, chars = [], onBadge, onAuthEvent, onV
           {optionRow((c) => setPhotoFromChar(c), -1)}
         </div>
 
+        <InboxSection onUnread={onUnread} />
         <FriendsSection onVisit={(f) => onVisit?.(f)} />
 
         {err && <div style={{ color: '#D6336C', fontSize: 13, marginTop: 10 }}>{err}</div>}
@@ -188,6 +191,35 @@ export default function Account({ onClose, chars = [], onBadge, onAuthEvent, onV
         </button>
       </div>
       {mode === 'login' && <div style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: '#9A8FBF' }}>Forgot password? Ask a parent (reset coming soon).</div>}
+    </div>
+  );
+}
+
+// Inbox: preset notes friends left you. Opening it marks them read.
+function InboxSection({ onUnread }) {
+  const [notes, setNotes] = useState([]);
+  useEffect(() => {
+    (async () => {
+      try {
+        const items = await inbox();
+        setNotes(items);
+        if (items.some((n) => !n.read)) { await markNotesRead().catch(() => {}); onUnread?.(0); }
+      } catch { /* offline */ }
+    })();
+  }, []);
+  if (notes.length === 0) return null;
+  return (
+    <div style={{ marginTop: 18, textAlign: 'left', borderTop: '1px solid #EEE9FA', paddingTop: 14 }}>
+      <div style={{ fontSize: 15, fontWeight: 900, color: '#2E2059', marginBottom: 8 }}>Notes 💌</div>
+      {notes.slice(0, 30).map((n) => (
+        <div key={n.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '7px 0' }}>
+          <Avatar url={n.avatar_url} size={34} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: '#9A8FBF', fontWeight: 800 }}>{n.screenname}</div>
+            <div style={{ fontSize: 14, color: '#2E2059', fontWeight: 700 }}>{presetText(n.preset_id)} {n.sticker || ''}</div>
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
