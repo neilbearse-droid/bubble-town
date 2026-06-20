@@ -105,3 +105,36 @@ export async function loadWorld() {
   if (error) throw error;
   return data || null;
 }
+
+// Read another player's world (read-only "visit"). RLS only allows this for friends.
+export async function loadFriendWorld(userId) {
+  const { data, error } = await supabase.from('worlds').select('state, updated_at').eq('user_id', userId).maybeSingle();
+  if (error) throw error;
+  return data || null;
+}
+
+// ── friends ─────────────────────────────────────────────────────────────────
+// Send a request by friend code → 'sent' | 'not_found' | 'self' | 'already_friends' | 'incoming'.
+export async function sendFriendRequest(code) {
+  const { data, error } = await supabase.rpc('send_friend_request', { code });
+  if (error) throw error;
+  return data;
+}
+export async function listFriends() {
+  const { data, error } = await supabase.rpc('list_friends');
+  if (error) throw error;
+  return data || [];
+}
+export async function incomingRequests() {
+  const { data, error } = await supabase.rpc('incoming_requests');
+  if (error) throw error;
+  return data || [];
+}
+export async function acceptRequest(reqId) {
+  const { error } = await supabase.rpc('accept_friend_request', { req_id: reqId });
+  if (error) throw error;
+}
+export async function declineRequest(reqId) {
+  const { error } = await supabase.rpc('decline_friend_request', { req_id: reqId });
+  if (error) throw error;
+}
