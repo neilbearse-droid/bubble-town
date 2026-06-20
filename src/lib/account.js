@@ -159,3 +159,25 @@ export async function markNotesRead() {
   const { error } = await supabase.rpc('mark_notes_read');
   if (error) throw error;
 }
+
+// ── password reset (parent verifies their email by code, then resets a child) ──
+export async function requestParentCode(parentEmail) {
+  const { error } = await supabase.auth.signInWithOtp({ email: parentEmail.trim(), options: { shouldCreateUser: true } });
+  if (error) throw error;
+}
+export async function verifyParentCode(parentEmail, code) {
+  const { error } = await supabase.auth.verifyOtp({ email: parentEmail.trim(), token: code.trim(), type: 'email' });
+  if (error) throw new Error('That code is wrong or has expired.');
+}
+export async function listMyKids() {
+  const { data, error } = await supabase.rpc('kids_for_parent');
+  if (error) throw error;
+  return data || [];
+}
+export async function resetKidPassword(kidId, newPassword) {
+  const { data, error } = await supabase.rpc('reset_kid_password', { kid_id: kidId, new_password: newPassword });
+  if (error) throw error;
+  if (data === 'too_short') throw new Error('Password needs at least 6 characters.');
+  if (data === 'not_your_child') throw new Error('That account is not under this email.');
+  return data; // 'ok'
+}
