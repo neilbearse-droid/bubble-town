@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { signUp, signIn, signOut, currentUser, getProfile, onAuthChange, uploadAvatar,
   listFriends, incomingRequests, sendFriendRequest, acceptRequest, declineRequest,
-  inbox, markNotesRead } from '../lib/account.js';
+  inbox, markNotesRead, requestParentCode, verifyParentCode, listMyKids, resetKidPassword } from '../lib/account.js';
 import { generateAvatarBlob, generateAvatarUrl } from '../lib/avatar.js';
 import { presetText } from '../lib/notes.js';
 import { randomChar } from '../data/buildings.js';
@@ -113,6 +113,8 @@ export default function Account({ onClose, chars = [], onBadge, onAuthEvent, onV
 
   if (loading) return Backdrop(<div style={{ textAlign: 'center', padding: 24, color: DARK }}>…</div>);
 
+  if (mode === 'reset') return Backdrop(<ResetFlow onBack={() => setMode('login')} closeBtn={closeBtn} />);
+
   // ── signed in: profile ──────────────────────────────────────────────────
   if (profile) {
     return Backdrop(
@@ -190,7 +192,92 @@ export default function Account({ onClose, chars = [], onBadge, onAuthEvent, onV
           {mode === 'login' ? 'Create one' : 'Log in'}
         </button>
       </div>
-      {mode === 'login' && <div style={{ textAlign: 'center', marginTop: 8, fontSize: 12, color: '#9A8FBF' }}>Forgot password? Ask a parent (reset coming soon).</div>}
+      {mode === 'login' && (
+        <div style={{ textAlign: 'center', marginTop: 10, fontSize: 12, color: '#9A8FBF' }}>
+          Forgot password?{' '}
+          <button onClick={() => { setErr(''); setMode('reset'); }} style={{ border: 'none', background: 'transparent', color: ACCENT, fontWeight: 800, cursor: 'pointer', fontSize: 12 }}>Reset it</button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Password reset: a parent proves their email by a 6-digit code, then sets a
+// chosen child's password. (Cleans up its temporary parent session on exit.)
+function ResetFlow({ onBack, closeBtn }) {
+  const [step, setStep] = useState('email'); // email | code | choose | done
+  const [email, setEmail] = useState('');
+  const [code, setCode] = useState('');
+  const [kids, setKids] = useState([]);
+  const [kid, setKid] = useState('');
+  const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+
+  const sendCode = async () => {
+    setErr(''); setBusy(true);
+    try { await requestParentCode(email); setStep('code'); } catch (e) { setErr(e?.message || 'Could not send the code.'); }
+    setBusy(false);
+  };
+  const verify = async () => {
+    setErr(''); setBusy(true);
+    try {
+      await verifyParentCode(email, code);
+      const ks = await listMyKids();
+      if (!ks.length) { setErr('No accounts are registered under that email.'); await signOut().catch(() => {}); }
+      else { setKids(ks); setKid(ks[0].id); setStep('choose'); }
+    } catch (e) { setErr(e?.message || 'Could not verify.'); }
+    setBusy(false);
+  };
+  const doReset = async () => {
+    setErr(''); setBusy(true);
+    try { await resetKidPassword(kid, pw); await signOut().catch(() => {}); setStep('done'); } catch (e) { setErr(e?.message || 'Could not reset.'); }
+    setBusy(false);
+  };
+  const backToLogin = async () => { await signOut().catch(() => {}); onBack(); };
+
+  const kidName = kids.find((k) => k.id === kid)?.screenname;
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {closeBtn}
+      <div style={{ textAlign: 'center', fontSize: 21, fontWeight: 900, color: DARK, marginBottom: 4 }}>Reset password</div>
+      <div style={{ textAlign: 'center', fontSize: 13, color: '#9A8FBF', marginBottom: 16 }}>A grown-up confirms by email, then picks the account.</div>
+
+      {step === 'email' && (<>
+        <input style={field} placeholder="Parent's email" type="email" autoCapitalize="none" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <button disabled={busy} onClick={sendCode} style={{ ...btn(`linear-gradient(${ACCENT},${PINK})`), marginTop: 14, opacity: busy ? 0.6 : 1 }}>{busy ? '…' : 'Email me a code'}</button>
+      </>)}
+
+      {step === 'code' && (<>
+        <div style={{ fontSize: 13, color: '#6B5B95', marginBottom: 8 }}>We sent a 6-digit code to <b>{email}</b>. Enter it below.</div>
+        <input style={{ ...field, letterSpacing: 6, textAlign: 'center', fontSize: 22 }} placeholder="000000" inputMode="numeric" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))} />
+        <button disabled={busy} onClick={verify} style={{ ...btn(`linear-gradient(${ACCENT},${PINK})`), marginTop: 14, opacity: busy ? 0.6 : 1 }}>{busy ? '…' : 'Verify'}</button>
+        <button disabled={busy} onClick={sendCode} style={{ ...linkBtn, display: 'block', margin: '10px auto 0' }}>Resend code</button>
+      </>)}
+
+      {step === 'choose' && (<>
+        <div style={{ fontSize: 13, fontWeight: 800, color: DARK, marginBottom: 6 }}>Which account?</div>
+        <div style={{ display: 'grid', gap: 6, marginBottom: 12 }}>
+          {kids.map((k) => (
+            <button key={k.id} onClick={() => setKid(k.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 12, cursor: 'pointer', border: `2px solid ${k.id === kid ? ACCENT : '#ECE7FA'}`, background: k.id === kid ? '#F6F0FF' : '#FBFAFF' }}>
+              <Avatar url={k.avatar_url} size={34} />
+              <span style={{ fontWeight: 800, color: DARK }}>{k.screenname}</span>
+            </button>
+          ))}
+        </div>
+        <input style={field} placeholder="New password (6+)" type="password" value={pw} onChange={(e) => setPw(e.target.value)} />
+        <button disabled={busy} onClick={doReset} style={{ ...btn(`linear-gradient(${ACCENT},${PINK})`), marginTop: 14, opacity: busy ? 0.6 : 1 }}>{busy ? '…' : 'Set new password'}</button>
+      </>)}
+
+      {step === 'done' && (<>
+        <div style={{ textAlign: 'center', fontSize: 40 }}>✅</div>
+        <div style={{ textAlign: 'center', fontSize: 15, color: DARK, fontWeight: 700, margin: '8px 0 16px' }}>Password updated! Log in as <b>{kidName}</b> with the new password.</div>
+        <button onClick={backToLogin} style={btn(`linear-gradient(${ACCENT},${PINK})`)}>Back to log in</button>
+      </>)}
+
+      {err && <div style={{ color: '#D6336C', fontSize: 13, marginTop: 10 }}>{err}</div>}
+      {step !== 'done' && <button onClick={backToLogin} style={{ ...linkBtn, display: 'block', margin: '14px auto 0' }}>Cancel</button>}
     </div>
   );
 }
