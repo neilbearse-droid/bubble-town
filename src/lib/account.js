@@ -138,3 +138,24 @@ export async function declineRequest(reqId) {
   const { error } = await supabase.rpc('decline_friend_request', { req_id: reqId });
   if (error) throw error;
 }
+
+// ── preset notes (DMs) ────────────────────────────────────────────────────────
+export async function sendNote(toUser, presetId, sticker) {
+  const { data, error } = await supabase.rpc('send_note', { to_user: toUser, p_preset: presetId, p_sticker: sticker || null });
+  if (error) throw error;
+  return data; // 'sent' | 'not_friends'
+}
+export async function inbox() {
+  const { data, error } = await supabase.rpc('inbox');
+  if (error) throw error;
+  return data || [];
+}
+export async function unreadCount() {
+  const { data, error } = await supabase.rpc('unread_count');
+  if (error) throw error;
+  return data || 0;
+}
+export async function markNotesRead() {
+  const { error } = await supabase.rpc('mark_notes_read');
+  if (error) throw error;
+}

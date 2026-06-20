@@ -17,6 +17,7 @@ import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
 // The social/account layer (and the Supabase SDK it pulls in) is lazy-loaded, so
 // players who never sign in don't download any of it — the game stays offline-first.
 const Account = lazy(() => import('./components/Account.jsx'));
+const NoteComposer = lazy(() => import('./components/NoteComposer.jsx'));
 const BADGE_KEY = 'tt_account_badge'; // tiny cached {avatar_url, screenname} so the button shows the avatar without loading Supabase
 const SAVE_TS_KEY = 'tt_save_ts';     // last local save time, to pick newer of local/cloud on restart
 
@@ -24,6 +25,8 @@ function Game() {
   const [st, setSt] = useState(null);
   const [showAccount, setShowAccount] = useState(false);
   const [visiting, setVisiting] = useState(null); // { id, name } when viewing a friend's world read-only
+  const [composing, setComposing] = useState(false); // note composer open (while visiting)
+  const [unread, setUnread] = useState(0); // unread notes, for the inbox badge
   const [badge, setBadge] = useState(() => { try { return JSON.parse(localStorage.getItem(BADGE_KEY) || 'null'); } catch { return null; } });
   const applyBadge = (b) => { setBadge(b); try { b ? localStorage.setItem(BADGE_KEY, JSON.stringify(b)) : localStorage.removeItem(BADGE_KEY); } catch { /* ignore */ } };
   const [vp, setVp] = useState({ w: 0, h: 0 }); // measured viewport size (reactive, so seat/tub positions stay correct)
@@ -175,6 +178,7 @@ function Game() {
       const u = await m.currentUser();
       if (!u) { applyBadge(null); signedInRef.current = false; return; } // session expired
       signedInRef.current = true;
+      m.unreadCount().then((n) => setUnread(n)).catch(() => {}); // inbox badge
       const cloud = await m.loadWorld();
       const localTs = Number(localStorage.getItem(SAVE_TS_KEY) || 0);
       const cloudTs = cloud ? Date.parse(cloud.updated_at) : 0;
@@ -208,9 +212,15 @@ function Game() {
   };
   const leaveVisit = () => {
     roRef.current = false;
-    setVisiting(null); setSel(null); setDockOpen(false);
+    setVisiting(null); setSel(null); setDockOpen(false); setComposing(false);
     if (ownStRef.current) setSt(ownStRef.current);
     setView('map'); setBid('home'); setPan(0); setCurFloor(0);
+  };
+  const sendNoteHandler = async (presetId, sticker) => {
+    try { const m = await import('./lib/account.js'); await m.sendNote(visiting.id, presetId, sticker); setSaveStat('Note sent! 💌'); }
+    catch { setSaveStat('Could not send note'); }
+    setTimeout(() => setSaveStat(''), 2000);
+    setComposing(false);
   };
 
   useEffect(() => {
@@ -1216,9 +1226,14 @@ function Game() {
         <div className="flex items-center gap-1.5">
           <span className="text-[10px] font-semibold" style={{ color: '#6FE7B7', textShadow: '0 1px 0 #fff' }}>{saveStat}</span>
           {visiting ? (
-            <button onClick={leaveVisit} className="pointer-events-auto rounded-full shadow-lg active:scale-95 font-bold" style={{ background: 'linear-gradient(#A24BFF,#FF6FB5)', color: '#fff', padding: '7px 14px', fontSize: 13 }}>
-              👋 Leave
-            </button>
+            <>
+              <button onClick={() => setComposing(true)} className="pointer-events-auto rounded-full shadow-lg active:scale-95 font-bold" style={{ background: 'rgba(36,27,70,0.86)', color: '#fff', padding: '7px 12px', fontSize: 13 }}>
+                💬 Note
+              </button>
+              <button onClick={leaveVisit} className="pointer-events-auto rounded-full shadow-lg active:scale-95 font-bold" style={{ background: 'linear-gradient(#A24BFF,#FF6FB5)', color: '#fff', padding: '7px 14px', fontSize: 13 }}>
+                👋 Leave
+              </button>
+            </>
           ) : (
             <>
               {view === 'building' && (
@@ -1226,9 +1241,12 @@ function Game() {
                   <span style={{ fontSize: 16, lineHeight: 1 }}>{night ? '☀️' : '🌙'}</span>
                 </button>
               )}
-              <button onClick={() => setShowAccount(true)} aria-label="Account" className="pointer-events-auto rounded-full shadow-lg active:scale-95 grid place-items-center overflow-hidden" style={{ background: 'rgba(36,27,70,0.86)', width: 34, height: 34, padding: 0 }}>
-                {badge?.avatar_url ? <img src={badge.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 15, lineHeight: 1 }}>👤</span>}
-              </button>
+              <div style={{ position: 'relative' }}>
+                <button onClick={() => setShowAccount(true)} aria-label="Account" className="pointer-events-auto rounded-full shadow-lg active:scale-95 grid place-items-center overflow-hidden" style={{ background: 'rgba(36,27,70,0.86)', width: 34, height: 34, padding: 0 }}>
+                  {badge?.avatar_url ? <img src={badge.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 15, lineHeight: 1 }}>👤</span>}
+                </button>
+                {unread > 0 && <span className="pointer-events-none" style={{ position: 'absolute', top: -3, right: -3, background: '#FF4D6D', color: '#fff', fontSize: 10, fontWeight: 800, borderRadius: 9, minWidth: 17, height: 17, display: 'grid', placeItems: 'center', padding: '0 4px', boxShadow: '0 1px 3px rgba(0,0,0,.3)' }}>{unread}</span>}
+              </div>
               <button onClick={() => { setShowSettings(true); setResetArm(false); }} className="pointer-events-auto rounded-full p-2 shadow-lg active:scale-95" style={{ background: 'rgba(36,27,70,0.86)', color: '#ECE7FA' }}>
                 <Settings size={16} />
               </button>
@@ -1443,7 +1461,13 @@ function Game() {
       {/* settings */}
       {showAccount && (
         <Suspense fallback={null}>
-          <Account onClose={() => setShowAccount(false)} chars={st.chars} onBadge={applyBadge} onAuthEvent={onAuthEvent} onVisit={visitFriend} />
+          <Account onClose={() => setShowAccount(false)} chars={st.chars} onBadge={applyBadge} onAuthEvent={onAuthEvent} onVisit={visitFriend} onUnread={setUnread} />
+        </Suspense>
+      )}
+
+      {composing && visiting && (
+        <Suspense fallback={null}>
+          <NoteComposer friendName={visiting.name} onClose={() => setComposing(false)} onSend={sendNoteHandler} />
         </Suspense>
       )}
 
