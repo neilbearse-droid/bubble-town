@@ -18,6 +18,7 @@ import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
 // players who never sign in don't download any of it — the game stays offline-first.
 const Account = lazy(() => import('./components/Account.jsx'));
 const BADGE_KEY = 'tt_account_badge'; // tiny cached {avatar_url, screenname} so the button shows the avatar without loading Supabase
+const SAVE_TS_KEY = 'tt_save_ts';     // last local save time, to pick newer of local/cloud on restart
 
 function Game() {
   const [st, setSt] = useState(null);
@@ -63,6 +64,8 @@ function Game() {
   const saveTimer = useRef(null);
   useEffect(() => { panRef.current = pan; }, [pan]);
   const stRef = useRef(null); stRef.current = st;
+  const signedInRef = useRef(false);   // are we syncing to a logged-in account?
+  const cloudSyncedRef = useRef(false); // one-time per session: claimed by login/signup or the startup auto-sync
   const floorRef = useRef(0); floorRef.current = curFloor;
 
   // ---- load + migrate (list first so missing keys never throw) ----
@@ -138,11 +141,55 @@ function Game() {
     saveTimer.current = setTimeout(async () => {
       try {
         await storage.set(KEY, JSON.stringify(st));
+        try { localStorage.setItem(SAVE_TS_KEY, String(Date.now())); } catch { /* ignore */ }
         setSaveStat('saved ✓');
         setTimeout(() => setSaveStat(''), 1300);
       } catch (e) { /* ignore */ }
+      // Also push to the cloud when signed in (dynamic import keeps Supabase out
+      // of the main bundle; failures are non-fatal — the local save still holds).
+      if (signedInRef.current) { try { const m = await import('./lib/account.js'); await m.saveWorld(st); } catch { /* offline/blocked */ } }
     }, 700);
   }, [st]);
+
+  // ---- cloud sync (all dynamic-imported so solo players never load Supabase) ----
+  const pushCloud = async () => {
+    try { const m = await import('./lib/account.js'); await m.saveWorld(stRef.current); localStorage.setItem(SAVE_TS_KEY, String(Date.now())); } catch { /* ignore */ }
+  };
+  const pullCloud = async () => {
+    try {
+      const m = await import('./lib/account.js');
+      const cloud = await m.loadWorld();
+      if (cloud && cloud.state) { setSt(clone(cloud.state)); localStorage.setItem(SAVE_TS_KEY, String(Date.parse(cloud.updated_at) || Date.now())); }
+      else await pushCloud();
+    } catch { /* ignore */ }
+  };
+  // On app start with a saved session: keep whichever of local/cloud is newer.
+  const autoSyncCloud = async () => {
+    try {
+      const m = await import('./lib/account.js');
+      const u = await m.currentUser();
+      if (!u) { applyBadge(null); signedInRef.current = false; return; } // session expired
+      signedInRef.current = true;
+      const cloud = await m.loadWorld();
+      const localTs = Number(localStorage.getItem(SAVE_TS_KEY) || 0);
+      const cloudTs = cloud ? Date.parse(cloud.updated_at) : 0;
+      if (cloud && cloud.state && cloudTs > localTs + 2000) { setSt(clone(cloud.state)); localStorage.setItem(SAVE_TS_KEY, String(cloudTs)); }
+      else await pushCloud();
+    } catch { /* ignore */ }
+  };
+  // Auth events from the account modal: signup seeds the cloud from this device's
+  // world; login pulls the account's canonical world down (so logging in never
+  // clobbers another sibling's saved world on a shared device).
+  const onAuthEvent = (ev) => {
+    cloudSyncedRef.current = true;
+    if (ev === 'signup') { signedInRef.current = true; pushCloud(); }
+    else if (ev === 'login') { signedInRef.current = true; pullCloud(); }
+    else if (ev === 'logout') { signedInRef.current = false; }
+  };
+
+  useEffect(() => {
+    if (badge && st && !cloudSyncedRef.current) { cloudSyncedRef.current = true; autoSyncCloud(); }
+  }, [badge, st]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Keep the measured viewport size in state so render math that depends on it
   // (seating a character on furniture, tubs) is correct on the very first paint —
@@ -1361,7 +1408,7 @@ function Game() {
       {/* settings */}
       {showAccount && (
         <Suspense fallback={null}>
-          <Account onClose={() => setShowAccount(false)} chars={st.chars} onBadge={applyBadge} />
+          <Account onClose={() => setShowAccount(false)} chars={st.chars} onBadge={applyBadge} onAuthEvent={onAuthEvent} />
         </Suspense>
       )}
 

@@ -11,7 +11,7 @@ const btn = (bg) => ({ width: '100%', padding: '12px', borderRadius: 14, border:
 
 // Account / sign-in panel. `chars` are the player's characters (used to make the
 // head avatar). The game works fully without ever opening this.
-export default function Account({ onClose, chars = [], onBadge }) {
+export default function Account({ onClose, chars = [], onBadge, onAuthEvent }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
@@ -60,6 +60,7 @@ export default function Account({ onClose, chars = [], onBadge }) {
       // generate + upload the head avatar from the chosen character
       if (chars[pick]) { const blob = await generateAvatarBlob(chars[pick], 256); await uploadAvatar(blob); }
       setProfile(await getProfile());
+      onAuthEvent?.('signup');
       setNote('Account created! 🎉');
     } catch (e) { fail(e); return; }
     setBusy(false);
@@ -67,11 +68,11 @@ export default function Account({ onClose, chars = [], onBadge }) {
 
   const doLogin = async () => {
     setErr(''); setBusy(true);
-    try { await signIn(form); setProfile(await getProfile()); } catch (e) { fail(e); return; }
+    try { await signIn(form); setProfile(await getProfile()); onAuthEvent?.('login'); } catch (e) { fail(e); return; }
     setBusy(false);
   };
 
-  const doSignout = async () => { setBusy(true); await signOut().catch(() => {}); setProfile(null); setUser(null); setBusy(false); };
+  const doSignout = async () => { setBusy(true); await signOut().catch(() => {}); onAuthEvent?.('logout'); setProfile(null); setUser(null); setBusy(false); };
 
   const setPhotoFrom = async (i) => {
     setBusy(true); setErr('');
