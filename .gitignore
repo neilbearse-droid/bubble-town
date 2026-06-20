@@ -3,3 +3,7 @@ dist
 *.local
 .DS_Store
 .vite
+
+# local env (Supabase keys are public-safe but keep .env out of git anyway)
+.env
+.env.local
