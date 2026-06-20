@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { CHAR_LAYERS, CHAR_BASE_ASPECT } from '../assets/charLayers.js';
 
 // Illustrated paper-doll. `c` maps each category to a layer key:
@@ -43,15 +44,26 @@ function CharSprite({ c = {}, size = 132, style }) {
   // (they enclose the foot, so hiding it avoids any peek).
   const footLayer = !c.shoesKey ? base.feet : (shoeG && shoeG.open ? base.ankle : null);
 
-  const layers = [base.body.url];
-  if (footLayer) layers.push(footLayer.url);
-  for (const k of order) { if (url[k]) layers.push(url[k]); }
-  if (hairG && !hatG) layers.push(hairG.full.url); // a hat is worn on a bald head — hide the hair
-  if (hatG) layers.push(hatG.full.url);
+  // Layers in paint order. The `blink` entry is a closed-eyes patch that sits at
+  // the same depth as the face (right over the open eyes, under garments/hair) and
+  // is pulsed by CSS to make the character blink.
+  const items = [{ src: base.body.url }];
+  if (base.blink) items.push({ src: base.blink.url, blink: true });
+  if (footLayer) items.push({ src: footLayer.url });
+  for (const k of order) { if (url[k]) items.push({ src: url[k] }); }
+  if (hairG && !hatG) items.push({ src: hairG.full.url }); // a hat is worn on a bald head — hide the hair
+  if (hatG) items.push({ src: hatG.full.url });
+
+  // random phase so a roomful of friends don't blink in unison
+  const blinkDelay = useMemo(() => `${-(Math.random() * 6).toFixed(2)}s`, []);
 
   return (
     <div style={{ position: 'relative', width: size, height: size * CHAR_BASE_ASPECT, ...style }}>
-      {layers.map((src, i) => <img key={i} src={src} draggable="false" alt="" style={FULL_FRAME} />)}
+      {items.map((it, i) => (
+        <img key={i} src={it.src} draggable="false" alt=""
+          className={it.blink ? 'tt-blink' : undefined}
+          style={it.blink ? { ...FULL_FRAME, opacity: 0, animationDelay: blinkDelay } : FULL_FRAME} />
+      ))}
     </div>
   );
 }
