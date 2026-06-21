@@ -11,7 +11,7 @@ import { BUILDABLE_IDS, BUILDINGS, MAP_SPOTS, bRooms, bSecrets, defaultState, fr
 import { EVENTS } from './data/events.js';
 import { BAND, CATS, CHAR_BAND, FLOORS, ITEMS, LOOT_KEYS, WALLS, floorS, wallS } from './data/items.js';
 import { setSoundOn, sfx, resumeAudio } from './lib/sound.js';
-import { BACKDROPS } from './data/backdrops.js';
+import { BACKDROPS, pickBackdrop } from './data/backdrops.js';
 import { storage } from './lib/storage.js';
 import { KEY, OLDKEY, clamp, clone, rand, uid } from './lib/utils.js';
 
@@ -767,6 +767,10 @@ function Game() {
   const vpW = vp.w || (vpRef.current && vpRef.current.getBoundingClientRect().width) || 1;
   const vpH = vp.h || (vpRef.current && vpRef.current.getBoundingClientRect().height) || 1;
   const curRoom = clamp(Math.round(-pan / vpW), 0, n - 1);
+  // Is the scene in view currently showing a self-contained NIGHT image? If so the
+  // overlay drops its own moon/stars (the image has them) and only lightly tints.
+  const sceneEntry = isExt ? (BACKDROPS[bid] && BACKDROPS[bid][extType]) : (BACKDROPS[bid] && BACKDROPS[bid].rooms && BACKDROPS[bid].rooms[`${curFloor}-${curRoom}`]);
+  const nightBg = night && !!(sceneEntry && sceneEntry.night);
 
   let chip = null;
   if (sel && view === 'building') {
@@ -956,7 +960,7 @@ function Game() {
             {/* room slices */}
             {fdef.rooms.map((rdef, i) => {
               const rs = b.rooms[i] || {};
-              const bgImg = (BACKDROPS[bid] && BACKDROPS[bid].rooms && BACKDROPS[bid].rooms[`${curFloor}-${i}`]) || null;
+              const bgImg = pickBackdrop(BACKDROPS[bid] && BACKDROPS[bid].rooms && BACKDROPS[bid].rooms[`${curFloor}-${i}`], night);
               if (bgImg) return (
                 <div key={i} className="absolute top-0 bottom-0 overflow-hidden" style={{ left: `${(i * 100) / n}%`, width: `${100 / n}%` }}>
                   <img src={bgImg} alt="" draggable="false" className="absolute inset-0" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
@@ -1021,8 +1025,8 @@ function Game() {
             </>)}
 
             {/* ── exterior backdrop (yard / balcony) ── */}
-            {isExt && ((BACKDROPS[bid] && BACKDROPS[bid][extType]) ? (
-              <img src={BACKDROPS[bid][extType]} alt="" draggable="false" className="absolute inset-0" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
+            {isExt && (pickBackdrop(BACKDROPS[bid] && BACKDROPS[bid][extType], night) ? (
+              <img src={pickBackdrop(BACKDROPS[bid][extType], night)} alt="" draggable="false" className="absolute inset-0" style={{ width: '100%', height: '100%', objectFit: 'cover', pointerEvents: 'none' }} />
             ) : (<>
               <div className="absolute inset-0" style={{ background: extType === 'balcony' ? 'linear-gradient(180deg,#7FB6EE,#C3E6FF 62%)' : 'linear-gradient(180deg,#8AD0FF,#D6F1FF 62%)' }} />
               <div className="absolute" style={{ left: '6%', top: '9%', width: 64, height: 64, borderRadius: '50%', background: 'radial-gradient(circle at 40% 40%,#FFF6CC,#FFDE63)', boxShadow: '0 0 36px rgba(255,222,99,.6)' }} />
@@ -1243,11 +1247,13 @@ function Game() {
           </div>
 
           {night && (
-            <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1400, background: 'linear-gradient(180deg, rgba(16,18,52,.6), rgba(28,20,66,.5) 55%, rgba(34,24,74,.34))' }}>
-              <div className="absolute" style={{ right: 26, top: 26, fontSize: 42, filter: 'drop-shadow(0 0 12px rgba(255,240,180,.65))' }}>🌙</div>
-              {[[10, 22], [20, 46], [31, 16], [43, 34], [55, 20], [64, 50], [74, 28], [85, 40], [15, 70], [38, 60], [50, 78], [82, 66]].map(([x, y], i) => (
-                <span key={i} className="absolute" style={{ left: `${x}%`, top: `${y}px`, fontSize: 11, color: '#FFFFFF', opacity: 0.85, animation: `tttwinkle ${1.5 + i * 0.12}s ease-in-out infinite` }}>✦</span>
-              ))}
+            <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 1400, background: nightBg ? 'linear-gradient(180deg, rgba(22,16,48,.34), rgba(30,20,60,.30))' : 'linear-gradient(180deg, rgba(16,18,52,.6), rgba(28,20,66,.5) 55%, rgba(34,24,74,.34))' }}>
+              {!nightBg && <>
+                <div className="absolute" style={{ right: 26, top: 26, fontSize: 42, filter: 'drop-shadow(0 0 12px rgba(255,240,180,.65))' }}>🌙</div>
+                {[[10, 22], [20, 46], [31, 16], [43, 34], [55, 20], [64, 50], [74, 28], [85, 40], [15, 70], [38, 60], [50, 78], [82, 66]].map(([x, y], i) => (
+                  <span key={i} className="absolute" style={{ left: `${x}%`, top: `${y}px`, fontSize: 11, color: '#FFFFFF', opacity: 0.85, animation: `tttwinkle ${1.5 + i * 0.12}s ease-in-out infinite` }}>✦</span>
+                ))}
+              </>}
             </div>
           )}
 
