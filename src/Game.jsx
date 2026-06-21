@@ -264,33 +264,40 @@ function Game() {
   }, []);
 
   // ---- helpers ----
-  // In a custom image-backdrop exterior the standable ground may start lower than
-  // the default floor band (e.g. a balcony deck is a thin bottom strip), so we read
-  // an optional `floor` y% off the backdrop and use it as the minimum landing y.
-  const sceneFloorMin = () => {
+  // A custom image backdrop may put the standable ground at a different y% than the
+  // default floor band (a balcony deck is a thin bottom strip; some rooms show more
+  // wall so the floor seam sits lower). Each backdrop can carry a `floor` y% (the
+  // line where the ground starts) and we clamp placement to it. For interiors the
+  // value is per-room, so we resolve which room an x% falls in.
+  const sceneFloorMin = (x) => {
     const f = stRef.current && stRef.current.buildings[bid] && stRef.current.buildings[bid].floors[floorRef.current];
-    if (f && f.exterior) { const e = BACKDROPS[bid] && BACKDROPS[bid][f.type]; if (e && e.floor) return e.floor; }
-    return null;
+    const bd = BACKDROPS[bid];
+    if (!f || !bd) return null;
+    if (f.exterior) { const e = bd[f.type]; return (e && e.floor) || null; }
+    const nr = (f.rooms && f.rooms.length) || 1;
+    const ri = clamp(Math.floor((x == null ? 50 : x) / (100 / nr)), 0, nr - 1);
+    const e = bd.rooms && bd.rooms[`${floorRef.current}-${ri}`];
+    return (e && e.floor) || null;
   };
-  const zoneClamp = (key, y) => {
+  const zoneClamp = (key, x, y) => {
     const zone = (ITEMS[key] && ITEMS[key].zone) || 'floor';
     const b = BAND[zone];
-    const min = (zone === 'floor' && sceneFloorMin()) || b[0];
+    const min = (zone === 'floor' && sceneFloorMin(x)) || b[0];
     return clamp(y, min, b[1]);
   };
-  const charClamp = (y) => clamp(y, sceneFloorMin() || CHAR_BAND[0], CHAR_BAND[1]);
+  const charClamp = (x, y) => clamp(y, sceneFloorMin(x) || CHAR_BAND[0], CHAR_BAND[1]);
   const upd = (fn) => setSt((s) => { const c = clone(s); fn(c); return c; });
 
   const isFloor = (key) => ((ITEMS[key] && ITEMS[key].zone) || 'floor') === 'floor';
   const addItem = (key, x, y) => {
-    const ly = zoneClamp(key, y);
+    const ly = zoneClamp(key, x, y);
     upd((c) => { c.buildings[bid].floors[floorRef.current].items.push({ id: uid(), key, x, y: ly, flip: false }); });
     if (isFloor(key)) puffAt(x, ly);
     sfx('pop');
   };
   const addRare = (key, x, y) => {
     if (!st.backpack[key]) return;
-    const ly = zoneClamp(key, y);
+    const ly = zoneClamp(key, x, y);
     upd((c) => {
       if (!c.backpack[key]) return;
       c.backpack[key]--; if (c.backpack[key] <= 0) delete c.backpack[key];
@@ -383,13 +390,13 @@ function Game() {
       const it = arr.find((t) => t.id === id);
       if (it && ITEMS[it.key].rare) c.backpack[it.key] = (c.backpack[it.key] || 0) + 1; // treasures go back to the pack
       if (it && ITEMS[it.key] && ITEMS[it.key].surf) { // things resting on it fall to the floor
-        for (const ch of arr) if (ch.on === id) { ch.on = null; ch.by = null; ch.y = zoneClamp(ch.key, 999); }
+        for (const ch of arr) if (ch.on === id) { ch.on = null; ch.by = null; ch.y = zoneClamp(ch.key, ch.x, 999); }
       }
       if (it && ITEMS[it.key] && ITEMS[it.key].tub) { // friends climb out when the tub goes
-        for (const ch of c.chars) if (ch.inTub === id) { delete ch.inTub; ch.y = charClamp(ch.y); }
+        for (const ch of c.chars) if (ch.inTub === id) { delete ch.inTub; ch.y = charClamp(ch.x, ch.y); }
       }
       if (it && ITEMS[it.key] && ITEMS[it.key].seat) { // friends stand up when their seat goes
-        for (const ch of c.chars) if (ch.seat === id) { delete ch.seat; delete ch.pose; ch.y = charClamp(ch.y); }
+        for (const ch of c.chars) if (ch.seat === id) { delete ch.seat; delete ch.pose; ch.y = charClamp(ch.x, ch.y); }
       }
       fs.items = arr.filter((t) => t.id !== id);
     });
@@ -402,7 +409,7 @@ function Game() {
   const placeChar = (id, x, y) => {
     const tub = tubAt(x, y);
     const seat = tub ? null : seatAt(x, y);
-    const ly = charClamp(y);
+    const ly = charClamp(x, y);
     upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current;
       if (tub) { ch.inTub = tub.id; delete ch.seat; delete ch.pose; ch.x = tub.x; ch.y = tub.baseY; }
       else if (seat) { ch.seat = seat.id; ch.pose = seat.pose; delete ch.inTub; ch.x = seat.x; ch.y = seat.baseY; }
@@ -430,11 +437,11 @@ function Game() {
       const ch = c.chars.find((t) => t.id === id); if (!ch) return;
       if (tub) { entered = ch.inTub !== tub.id; ch.inTub = tub.id; delete ch.seat; delete ch.pose; ch.x = tub.x; ch.y = tub.baseY; }
       else if (seat) { entered = ch.seat !== seat.id; ch.seat = seat.id; ch.pose = seat.pose; delete ch.inTub; ch.x = seat.x; ch.y = seat.baseY; }
-      else { delete ch.inTub; delete ch.seat; delete ch.pose; ch.y = charClamp(ch.y); }
+      else { delete ch.inTub; delete ch.seat; delete ch.pose; ch.y = charClamp(ch.x, ch.y); }
     });
     if (tub) { sfx('pip'); if (entered) relaxBurst(id); }
     else if (seat) { sfx('pip'); }
-    else setTimeout(() => puffAt(x, charClamp(y)), 230);
+    else setTimeout(() => puffAt(x, charClamp(x, y)), 230);
   };
   const relaxBurst = (id) => {
     const ch = ((stRef.current && stRef.current.chars) || []).find((t) => t.id === id);
@@ -696,12 +703,12 @@ function Game() {
           upd((c) => { const it = c.buildings[bid].floors[floorRef.current].items.find((t) => t.id === d.id); if (it) { it.x = sf.x; it.y = sf.y; it.on = sf.id; it.ox = sf.x - sf.sx; it.by = sf.baseY; } });
           setSurfHint(null); sfx('pop');
         } else {
-          const landY = zoneClamp(d.key, w.y);
+          const landY = zoneClamp(d.key, w.x, w.y);
           upd((c) => {
             const fs = c.buildings[bid].floors[floorRef.current];
             const it = fs.items.find((t) => t.id === d.id);
             if (it) {
-              it.y = zoneClamp(it.key, it.y); it.on = null; it.by = null;
+              it.y = zoneClamp(it.key, it.x, it.y); it.on = null; it.by = null;
               if (ITEMS[it.key] && ITEMS[it.key].surf && vpRef.current) {
                 const rr = vpRef.current.getBoundingClientRect();
                 for (const ch of fs.items) if (ch.on === it.id) { ch.x = it.x + ch.ox; ch.by = it.y; ch.y = surfTopY(it, rr.height); }
@@ -809,7 +816,7 @@ function Game() {
     const isChar = drag.kind === 'char' || drag.kind === 'place-char';
     const zone = isChar ? 'floor' : key ? ITEMS[key].zone : 'floor';
     if (zone !== 'floor') return null;
-    const landY = isChar ? charClamp(dw.y) : zoneClamp(key, dw.y);
+    const landY = isChar ? charClamp(dw.x, dw.y) : zoneClamp(key, dw.x, dw.y);
     const wdt = isChar ? 90 : (ITEMS[key] ? ITEMS[key].s * 0.7 : 60);
     return { x: dw.x, y: landY, w: wdt };
   })();
