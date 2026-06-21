@@ -264,7 +264,21 @@ function Game() {
   }, []);
 
   // ---- helpers ----
-  const zoneClamp = (key, y) => { const b = BAND[(ITEMS[key] && ITEMS[key].zone) || 'floor']; return clamp(y, b[0], b[1]); };
+  // In a custom image-backdrop exterior the standable ground may start lower than
+  // the default floor band (e.g. a balcony deck is a thin bottom strip), so we read
+  // an optional `floor` y% off the backdrop and use it as the minimum landing y.
+  const sceneFloorMin = () => {
+    const f = stRef.current && stRef.current.buildings[bid] && stRef.current.buildings[bid].floors[floorRef.current];
+    if (f && f.exterior) { const e = BACKDROPS[bid] && BACKDROPS[bid][f.type]; if (e && e.floor) return e.floor; }
+    return null;
+  };
+  const zoneClamp = (key, y) => {
+    const zone = (ITEMS[key] && ITEMS[key].zone) || 'floor';
+    const b = BAND[zone];
+    const min = (zone === 'floor' && sceneFloorMin()) || b[0];
+    return clamp(y, min, b[1]);
+  };
+  const charClamp = (y) => clamp(y, sceneFloorMin() || CHAR_BAND[0], CHAR_BAND[1]);
   const upd = (fn) => setSt((s) => { const c = clone(s); fn(c); return c; });
 
   const isFloor = (key) => ((ITEMS[key] && ITEMS[key].zone) || 'floor') === 'floor';
@@ -372,10 +386,10 @@ function Game() {
         for (const ch of arr) if (ch.on === id) { ch.on = null; ch.by = null; ch.y = zoneClamp(ch.key, 999); }
       }
       if (it && ITEMS[it.key] && ITEMS[it.key].tub) { // friends climb out when the tub goes
-        for (const ch of c.chars) if (ch.inTub === id) { delete ch.inTub; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
+        for (const ch of c.chars) if (ch.inTub === id) { delete ch.inTub; ch.y = charClamp(ch.y); }
       }
       if (it && ITEMS[it.key] && ITEMS[it.key].seat) { // friends stand up when their seat goes
-        for (const ch of c.chars) if (ch.seat === id) { delete ch.seat; delete ch.pose; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
+        for (const ch of c.chars) if (ch.seat === id) { delete ch.seat; delete ch.pose; ch.y = charClamp(ch.y); }
       }
       fs.items = arr.filter((t) => t.id !== id);
     });
@@ -388,7 +402,7 @@ function Game() {
   const placeChar = (id, x, y) => {
     const tub = tubAt(x, y);
     const seat = tub ? null : seatAt(x, y);
-    const ly = clamp(y, CHAR_BAND[0], CHAR_BAND[1]);
+    const ly = charClamp(y);
     upd((c) => { const ch = c.chars.find((t) => t.id === id); if (ch) { ch.building = bid; ch.floor = floorRef.current;
       if (tub) { ch.inTub = tub.id; delete ch.seat; delete ch.pose; ch.x = tub.x; ch.y = tub.baseY; }
       else if (seat) { ch.seat = seat.id; ch.pose = seat.pose; delete ch.inTub; ch.x = seat.x; ch.y = seat.baseY; }
@@ -416,11 +430,11 @@ function Game() {
       const ch = c.chars.find((t) => t.id === id); if (!ch) return;
       if (tub) { entered = ch.inTub !== tub.id; ch.inTub = tub.id; delete ch.seat; delete ch.pose; ch.x = tub.x; ch.y = tub.baseY; }
       else if (seat) { entered = ch.seat !== seat.id; ch.seat = seat.id; ch.pose = seat.pose; delete ch.inTub; ch.x = seat.x; ch.y = seat.baseY; }
-      else { delete ch.inTub; delete ch.seat; delete ch.pose; ch.y = clamp(ch.y, CHAR_BAND[0], CHAR_BAND[1]); }
+      else { delete ch.inTub; delete ch.seat; delete ch.pose; ch.y = charClamp(ch.y); }
     });
     if (tub) { sfx('pip'); if (entered) relaxBurst(id); }
     else if (seat) { sfx('pip'); }
-    else setTimeout(() => puffAt(x, clamp(y, CHAR_BAND[0], CHAR_BAND[1])), 230);
+    else setTimeout(() => puffAt(x, charClamp(y)), 230);
   };
   const relaxBurst = (id) => {
     const ch = ((stRef.current && stRef.current.chars) || []).find((t) => t.id === id);
@@ -795,7 +809,7 @@ function Game() {
     const isChar = drag.kind === 'char' || drag.kind === 'place-char';
     const zone = isChar ? 'floor' : key ? ITEMS[key].zone : 'floor';
     if (zone !== 'floor') return null;
-    const landY = isChar ? clamp(dw.y, CHAR_BAND[0], CHAR_BAND[1]) : zoneClamp(key, dw.y);
+    const landY = isChar ? charClamp(dw.y) : zoneClamp(key, dw.y);
     const wdt = isChar ? 90 : (ITEMS[key] ? ITEMS[key].s * 0.7 : 60);
     return { x: dw.x, y: landY, w: wdt };
   })();
