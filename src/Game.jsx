@@ -280,9 +280,18 @@ function Game() {
     return (e && e.floor) || null;
   };
   const zoneClamp = (key, x, y) => {
-    const zone = (ITEMS[key] && ITEMS[key].zone) || 'floor';
+    const def = ITEMS[key];
+    const zone = (def && def.zone) || 'floor';
     const b = BAND[zone];
-    const min = (zone === 'floor' && sceneFloorMin(x)) || b[0];
+    let min = (zone === 'floor' && sceneFloorMin(x)) || b[0];
+    // Flat "ground" items (rugs/mats) lie in perspective, so the top of the sprite is
+    // their far edge. Anchor that BACK edge to the floor seam — not the front edge —
+    // by pushing the min down by the sprite's on-screen height, so a rug slides all the
+    // way back until it meets the wall instead of climbing up it.
+    if (zone === 'floor' && def && def.layer === 'ground') {
+      const vph = vp.h || (vpRef.current && vpRef.current.getBoundingClientRect().height) || 1;
+      min = Math.min(b[1], min + (def.s * (def.r || 1)) / vph * 100);
+    }
     return clamp(y, min, b[1]);
   };
   const charClamp = (x, y) => clamp(y, sceneFloorMin(x) || CHAR_BAND[0], CHAR_BAND[1]);
