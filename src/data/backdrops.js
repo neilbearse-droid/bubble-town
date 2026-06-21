@@ -9,7 +9,10 @@ const u = (name) => urls['../assets/bg/' + name + '.webp'];
 
 export const BACKDROPS = {
   home: {
-    rooms: { '0-0': { day: u('room-home'), night: u('room-home-night') } }, // Living Room
+    rooms: {
+      '0-0': { day: u('room-home'), night: u('room-home-night') },       // Living Room
+      '0-1': { day: u('room-kitchen'), night: u('room-kitchen-night') }, // Kitchen
+    },
     // `floor` = the y% where the standable ground starts in the image, so
     // furniture/characters land on the grass/deck instead of floating.
     yard: { day: u('yard-home'), night: u('yard-home-night'), floor: 66 },
