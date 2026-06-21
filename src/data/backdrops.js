@@ -12,6 +12,7 @@ export const BACKDROPS = {
     rooms: {
       '0-0': { day: u('room-home'), night: u('room-home-night') },       // Living Room
       '0-1': { day: u('room-kitchen'), night: u('room-kitchen-night') }, // Kitchen
+      '1-0': { day: u('room-bed'), night: u('room-bed-night') },         // Bedroom
     },
     // `floor` = the y% where the standable ground starts in the image, so
     // furniture/characters land on the grass/deck instead of floating.
